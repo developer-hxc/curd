@@ -17,6 +17,9 @@
     "autoload": {
         "psr-4": {
             "Hxc\\Curd\\": "src/"
-        }
+        },
+        "files": [
+            "src/common.php"
+        ]
     }
 }
