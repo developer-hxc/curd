@@ -1,10 +1,10 @@
 <?php
 
-namespace Hxc\Curd\Admin;
+namespace Hxc\Curd\Traits\Admin;
 
 use think\db\Query;
 
-interface curdInterface
+interface CurdInterface
 {
     /**
      * 列表查询sql捕获

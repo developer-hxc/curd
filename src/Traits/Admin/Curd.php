@@ -1,6 +1,6 @@
 <?php
 
-namespace Hxc\Curd\Admin;
+namespace Hxc\Curd\Traits\Admin;
 
 
 use think\Db;
@@ -18,9 +18,32 @@ use think\Validate;
  * Trait curd
  * @package app\admin\library\hxc
  * @property $countField
+ * @property $modelName
+ * @property $searchField
+ * @property $pageLimit
+ * @property $orderField
+ * @property array $indexField
+ * @property array $addField
+ * @property array $editField
+ * @property array $add_rule
+ * @property array $edit_rule
+ * @property boolean $addTransaction
+ * @property boolean $editTransaction
+ * @property boolean $deleteTransaction
  * @method Query indexQuery(Query $sql)
+ * @method mixed pageEach($item, $key)
+ * @method mixed indexAssign($data)
+ * @method mixed assign($name, $value = '')
+ * @method mixed fetch($template = '', $vars = [], $replace = [], $config = [])
+ * @method mixed addData($data)
+ * @method mixed addEnd($id, $data)
+ * @method mixed addAssign($data)
+ * @method mixed editAssign($data)
+ * @method mixed editData($data)
+ * @method mixed editEnd($id, $data)
+ * @method mixed deleteEnd($id)
  */
-trait curd
+trait Curd
 {
     /**
      * 列表页

@@ -6,7 +6,7 @@
  * Time: 17:19
  */
 
-namespace Hxc\Curd\App;
+namespace Hxc\Curd\Traits\App;
 
 
 use app\app\model\User;

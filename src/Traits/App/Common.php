@@ -6,7 +6,7 @@
  * Time: 16:56
  */
 
-namespace Hxc\Curd\App;
+namespace Hxc\Curd\Traits\App;
 
 
 use think\Cache;

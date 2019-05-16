@@ -1,6 +1,6 @@
 <?php
 
-namespace Hxc\Curd\Admin;
+namespace Hxc\Curd\Traits\Admin;
 
 
 trait Common
