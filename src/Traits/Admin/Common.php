@@ -3,8 +3,12 @@
 namespace Hxc\Curd\Traits\Admin;
 
 
+use hxc\Curd\Traits\JsonReturn;
+
 trait Common
 {
+    use JsonReturn;
+
     /**
      * 列表查询sql捕获
      * @param \think\db\Query $sql

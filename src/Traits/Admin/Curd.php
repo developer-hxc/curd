@@ -30,21 +30,13 @@ use think\Validate;
  * @property boolean $addTransaction
  * @property boolean $editTransaction
  * @property boolean $deleteTransaction
- * @method Query indexQuery(Query $sql)
- * @method mixed pageEach($item, $key)
- * @method mixed indexAssign($data)
  * @method mixed assign($name, $value = '')
  * @method mixed fetch($template = '', $vars = [], $replace = [], $config = [])
- * @method mixed addData($data)
- * @method mixed addEnd($id, $data)
- * @method mixed addAssign($data)
- * @method mixed editAssign($data)
- * @method mixed editData($data)
- * @method mixed editEnd($id, $data)
- * @method mixed deleteEnd($id)
  */
 trait Curd
 {
+    use Common;
+
     /**
      * 列表页
      * @param Request $request
@@ -216,7 +208,7 @@ trait Curd
             $validate = new Validate($this->add_rule);
             $result = $validate->check($add_data);
             if (!$result) {//验证不通过
-                return json_err(-1, $validate->getError());
+                return $this->returnFail($validate->getError());
             } else {//验证通过
                 if ($this->addTransaction) {
                     Db::startTrans();
@@ -235,12 +227,12 @@ trait Curd
                     if ($this->addTransaction) {
                         Db::commit();
                     }
-                    return json_suc();
+                    return $this->returnSuccess();
                 } else {
                     if ($this->addTransaction) {
                         Db::rollback();
                     }
-                    return json_err();
+                    return $this->returnFail();
                 }
             }
         } else {
@@ -262,7 +254,7 @@ trait Curd
     {
         $id = $request->param('id');
         if (!$id) {
-            return json_err(-1, '参数有误，缺少id');
+            return $this->returnFail('参数有误，缺少id');
         }
         if ($request->isPost()) {
             $params = $request->only($this->editField);
@@ -273,7 +265,7 @@ trait Curd
             $validate = new Validate($this->edit_rule);
             $result = $validate->check($edit_data);
             if (!$result) {//验证不通过
-                return json_err(-1, $validate->getError());
+                return $this->returnFail($validate->getError());
             } else {//验证通过
                 if ($this->editTransaction) {
                     Db::startTrans();
@@ -290,12 +282,12 @@ trait Curd
                     if ($this->editTransaction) {
                         Db::commit();
                     }
-                    return json_suc();
+                    return $this->returnSuccess();
                 } else {
                     if ($this->editTransaction) {
                         Db::rollback();
                     }
-                    return json_err();
+                    return $this->returnFail();
                 }
             }
         } else {
@@ -322,7 +314,7 @@ trait Curd
         }
         $data = model($this->modelName)->get($id);
         if (empty($data)) {
-            return json_err();
+            return $this->returnFail();
         }
         if ($data->delete()) {
             $delEndRes = $this->deleteEnd($id);
@@ -335,12 +327,12 @@ trait Curd
             if ($this->deleteTransaction) {
                 Db::commit();
             }
-            return json_suc();
+            return $this->returnSuccess();
         } else {
             if ($this->deleteTransaction) {
                 Db::rollback();
             }
-            return json_err();
+            return $this->returnFail();
         }
     }
 }

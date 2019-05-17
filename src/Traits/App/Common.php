@@ -9,60 +9,17 @@
 namespace Hxc\Curd\Traits\App;
 
 
+use hxc\Curd\Traits\JsonReturn;
 use think\Cache;
 use think\Request;
+use think\response\Json;
 use think\Session;
 
 trait Common
 {
+    use JsonReturn;
     /**
-     * 通用返回，程序内部判断应该返回的状态
-     * @param $flag
-     * @param $failMessage
-     * @param array $res
-     * @return \think\response\Json
-     */
-    public function returnRes($flag,$failMessage,$res = [])
-    {
-        if($flag || is_array($flag)){
-            return $this->returnSuccess($res);
-        }else{
-            return $this->returnFail($failMessage);
-        }
-    }
-
-    /**
-     * @param array $res
-     * @return \think\response\Json
-     */
-    public function returnSuccess($res = [])
-    {
-        $data = [
-            'code' => 1,
-            'status' => 'success',
-        ];
-        if($res){
-            $data['data'] = $res;
-        }
-        return json_encode($data);
-    }
-
-    /**
-     * @param $failMessage
-     * @return \think\response\Json
-     */
-    public function returnFail($failMessage)
-    {
-        $data = [
-            'code' => 0,
-            'status' => 'fail',
-            'msg' => $failMessage
-        ];
-        return json_encode($data);
-    }
-
-    /**
-     * @return \think\response\Json
+     * @return Json
      */
     public function notLogin()
     {
@@ -71,7 +28,7 @@ trait Common
             'status' => 'fail',
             'msg' => '没有登录'
         ];
-        return json_encode($data);
+        return json($data);
     }
 
     /**
@@ -90,10 +47,10 @@ trait Common
     public function getAuth()
     {
         $token = Request::instance()->param('token');
-        if($token){//token登录
+        if ($token) {//token登录
             $res = Cache::get($token);
-        }else{//web登录
-            $res = Session::get('data','auth');
+        } else {//web登录
+            $res = Session::get('data', 'auth');
         }
         return $res;
     }

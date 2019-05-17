@@ -101,8 +101,11 @@ DOC;
         $output->writeln("---------------------------------------");
         $output->writeln("Starting success");
         $output->writeln("---------------------------------------");
-        $output->writeln("Url:/admin/generate");
-        $output->writeln("Document path:/hxc.lock");
+        $output->writeln("Url:/generate");
+        $output->writeln("Document path:/hxc.md");
+        $output->writeln("---------------------------------------");
+        copy(__DIR__ . '/../config.php', APP_PATH . 'extra/curd.php');
+        $output->writeln("Copy config file success");
         $output->writeln("---------------------------------------");
     }
 }

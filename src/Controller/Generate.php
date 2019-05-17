@@ -20,7 +20,7 @@ class Generate
 
     public function index()
     {
-        return view();
+        return view(__DIR__ . '/index.html');
     }
 
     /**
