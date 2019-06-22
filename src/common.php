@@ -1,6 +1,5 @@
 <?php
 
-use think\Config;
 use think\Console;
 use think\Route;
 
@@ -8,7 +7,7 @@ Console::addDefaultCommands([
     "Hxc\\Curd\\Command\\Hxc",
 ]);
 
-if (Config::get('app_debug') && file_exists(ROOT_PATH . '/hxc.lock')) {
+if (file_exists(ROOT_PATH . '/hxc.lock')) {
     Route::rule([
         'generate/showTables' => '\\Hxc\\Curd\\Controller\\Generate@showTables',
         'generate/getModelData' => '\\Hxc\\Curd\\Controller\\Generate@getModelData',

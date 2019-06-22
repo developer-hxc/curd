@@ -108,8 +108,14 @@ DOC;
         if (!file_exists($targetPath)) {
             mkdir($targetPath, 0777, true);
         }
-        copy(__DIR__ . '/../config.php', $targetPath . 'curd.php');
-        $output->writeln("Copy config file success");
+        if (file_exists($targetPath . 'curd.php')) {
+            //配置文件已存在
+            $file = realpath(__DIR__ . '/../config.php');
+            $output->warning("配置文件（{$targetPath}curd.php）已存在，请查看{$file}确定有无更新。");
+        } else {
+            copy(__DIR__ . '/../config.php', $targetPath . 'curd.php');
+            $output->writeln("Copy config file success");
+        }
         $output->writeln("---------------------------------------");
     }
 }

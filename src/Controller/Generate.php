@@ -230,6 +230,7 @@ class Generate
     ];
 CODE;
                     $controller_code = $this->getControllerCode($controller_name, $controller_code, $data);
+                    $this->createPath($controller_path);
                     file_put_contents($controller_path, $controller_code);
                 }
                 if ($v == '模型') {
@@ -238,6 +239,7 @@ CODE;
                         return json_encode(['code' => 0, 'msg' => '模型已存在']);
                     }
                     $model_code = $this->getModelCode($model_name, $data, $autoType);
+                    $this->createPath($model_path);
                     file_put_contents($model_path, $model_code);
                 }
                 if ($dir == 'admin' && $v == '视图') {
@@ -246,7 +248,7 @@ CODE;
                     if (is_dir($view_dir)) {
                         return json_encode(['code' => 0, 'msg' => '视图目录已存在']);
                     } else {
-                        mkdir($view_dir);
+                        $this->createPath($view_dir);
                         file_put_contents($view_dir . 'index.html', $this->getIndexViewCode($index_field, $search_field));
                         file_put_contents($view_dir . 'add.html', $this->getAddViewCode($add_field));
                         file_put_contents($view_dir . 'edit.html', $this->getEditViewCode($edit_field));
@@ -339,6 +341,18 @@ CODE;
     protected \$cache = true;//是否开启缓存查询，开启后每次增加，修改，删除都会刷新缓存
 
 HTML;
+    }
+
+    private function createPath($path)
+    {
+        if (strpos($path, '.') !== false) {
+            $path = dirname($path);
+        }
+        if (file_exists($path)) {
+            return;
+        }
+        mkdir($path, 0777, true);
+        return;
     }
 
     /**
