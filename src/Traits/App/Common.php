@@ -1,13 +1,6 @@
 <?php
-/**
- * Created by PhpStorm.
- * Auth: Administrator
- * Date: 2019-05-11
- * Time: 16:56
- */
 
 namespace Hxc\Curd\Traits\App;
-
 
 use hxc\Curd\Traits\JsonReturn;
 use think\Cache;
@@ -18,6 +11,7 @@ use think\Session;
 trait Common
 {
     use JsonReturn;
+
     /**
      * @return Json
      */

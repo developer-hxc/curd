@@ -4,7 +4,7 @@
 namespace hxc\Curd\Traits;
 
 use think\Config;
-use think\response\Json;
+use think\exception\HttpResponseException;
 
 trait JsonReturn
 {
@@ -14,21 +14,19 @@ trait JsonReturn
      * @param $failMessage
      * @param array $res
      * @param null|integer $code
-     * @return Json
      */
     public function returnRes($flag, $failMessage, $res = [], $code = null)
     {
         if ($flag || is_array($flag)) {
-            return $this->returnSuccess($res, $code);
+            $this->returnSuccess($res, $code);
         } else {
-            return $this->returnFail($failMessage, $code);
+            $this->returnFail($failMessage, $code);
         }
     }
 
     /**
      * @param array $res
      * @param null|integer $code
-     * @return Json
      */
     public function returnSuccess($res = [], $code = null)
     {
@@ -42,13 +40,12 @@ trait JsonReturn
         if ($res) {
             $data['data'] = $res;
         }
-        return json($data);
+        throw new HttpResponseException(\json($data));
     }
 
     /**
      * @param string $failMessage
      * @param null|integer $code
-     * @return Json
      */
     public function returnFail($failMessage = '操作失败', $code = null)
     {
@@ -60,6 +57,6 @@ trait JsonReturn
             'status' => 'fail',
             'msg' => $failMessage
         ];
-        return json($data);
+        throw new HttpResponseException(\json($data));
     }
 }

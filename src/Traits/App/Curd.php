@@ -1,15 +1,7 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: Administrator
- * Date: 2019-05-14
- * Time: 9:04
- */
 
 namespace Hxc\Curd\Traits\App;
 
-
-use think\Cache;
 use think\exception\DbException;
 use think\Request;
 use think\response\Json;
@@ -75,7 +67,7 @@ trait Curd
                 $sql = $sql->cache(true, 0, 'controller');
             }
             $res = $sql->paginate($this->limit);
-            return $this->returnRes($res->toArray()['data'], '数据不存在', $res);
+            $this->returnRes($res->toArray()['data'], '数据不存在', $res);
         }
     }
 
@@ -91,13 +83,10 @@ trait Curd
             $params_status = $this->validate($params, "{$this->model}.store");
             if (true !== $params_status) {
                 // 验证失败 输出错误信息
-                return $this->returnFail($params_status);
+                $this->returnFail($params_status);
             }
             $res = model($this->model)->allowField(true)->save($params);
-            if ($this->cache) {
-                Cache::tag('controller')->clear();
-            }
-            return $this->returnRes($res, '创建失败');
+            $this->returnRes($res, '创建失败');
         }
     }
 
@@ -113,13 +102,10 @@ trait Curd
             $params_status = $this->validate($params, "{$this->model}.update");
             if (true !== $params_status) {
                 // 验证失败 输出错误信息
-                return $this->returnFail($params_status);
+                $this->returnFail($params_status);
             }
             $res = model($this->model)->allowField(true)->save($params, ['id' => $params['id']]);
-            if ($this->cache) {
-                Cache::tag('controller')->clear();
-            }
-            return $this->returnRes($res, '编辑失败');
+            $this->returnRes($res, '编辑失败');
         }
     }
 
@@ -136,14 +122,11 @@ trait Curd
             $params_status = $this->validate($params, "{$this->model}.delete");
             if (true !== $params_status) {
                 // 验证失败 输出错误信息
-                return $this->returnFail($params_status);
+                $this->returnFail($params_status);
             }
             $data = model($this->model)->get($params['id']);
             $res = $data->delete();
-            if ($this->cache) {
-                Cache::tag('controller')->clear();
-            }
-            return $this->returnRes($res, '删除失败');
+            $this->returnRes($res, '删除失败');
         }
     }
 }

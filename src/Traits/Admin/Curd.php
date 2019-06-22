@@ -9,6 +9,7 @@ use think\db\exception\ModelNotFoundException;
 use think\db\Query;
 use think\Exception;
 use think\exception\DbException;
+use think\exception\HttpResponseException;
 use think\Request;
 use think\response\Json;
 use think\Session;
@@ -202,43 +203,29 @@ trait Curd
         if ($request->isPost()) {
             $params = $request->only($this->addField);
             $add_data = $this->addData($params);
-            if (is_object($add_data)) {
-                return $add_data;
-            }
             $validate = new Validate($this->add_rule);
             $result = $validate->check($add_data);
             if (!$result) {//验证不通过
-                return $this->returnFail($validate->getError());
-            } else {//验证通过
-                if ($this->addTransaction) {
-                    Db::startTrans();
-                }
-                $model = model($this->modelName);
-                $res = $model->allowField(true)->save($add_data);
-                if ($res) {
-                    $addId = $model->id;
-                    $addEndRes = $this->addEnd($addId, $add_data);
-                    if (is_object($addEndRes)) {
-                        if ($this->addTransaction) {
-                            Db::rollback();
-                        }
-                        return $addEndRes;
-                    }
-                    if ($this->addTransaction) {
-                        Db::commit();
-                    }
-                    return $this->returnSuccess();
-                } else {
-                    if ($this->addTransaction) {
-                        Db::rollback();
-                    }
-                    return $this->returnFail();
-                }
+                $this->returnFail($validate->getError());
             }
-        } else {
-            $this->assign($this->addAssign([]));
-            return $this->fetch();
+            //验证通过
+            Db::startTrans();
+            try {
+                $model = model($this->modelName);
+                $model->allowField(true)->save($add_data);
+                $this->addEnd($model->id, $add_data);
+            } catch (HttpResponseException $e) {
+                Db::rollback();
+                throw $e;
+            } catch (\Exception $e) {
+                Db::rollback();
+                $this->returnFail($e->getMessage());
+            }
+            Db::commit();
+            $this->returnSuccess(['id' => $model->id]);
         }
+        $this->assign($this->addAssign([]));
+        return $this->fetch();
     }
 
     /**
@@ -254,85 +241,63 @@ trait Curd
     {
         $id = $request->param('id');
         if (!$id) {
-            return $this->returnFail('参数有误，缺少id');
+            $this->returnFail('参数有误，缺少id');
         }
         if ($request->isPost()) {
             $params = $request->only($this->editField);
             $edit_data = $this->editData($params);
-            if (is_object($edit_data)) {
-                return $edit_data;
-            }
             $validate = new Validate($this->edit_rule);
             $result = $validate->check($edit_data);
             if (!$result) {//验证不通过
-                return $this->returnFail($validate->getError());
-            } else {//验证通过
-                if ($this->editTransaction) {
-                    Db::startTrans();
-                }
-                $res = model($this->modelName)->allowField(true)->save($edit_data, ['id' => $id]);
-                if ($res) {
-                    $editEndRes = $this->editEnd($id, $edit_data);
-                    if (is_object($editEndRes)) {
-                        if ($this->editTransaction) {
-                            Db::rollback();
-                        }
-                        return $editEndRes;
-                    }
-                    if ($this->editTransaction) {
-                        Db::commit();
-                    }
-                    return $this->returnSuccess();
-                } else {
-                    if ($this->editTransaction) {
-                        Db::rollback();
-                    }
-                    return $this->returnFail();
-                }
+                $this->returnFail($validate->getError());
             }
-        } else {
-            $data = model($this->modelName)->find($id);
-            $this->assign($this->editAssign([
-                'id' => $id,
-                'data' => $data
-            ]));
-            return $this->fetch();
+            //验证通过
+            Db::startTrans();
+            try {
+                model($this->modelName)->allowField(true)->save($edit_data, ['id' => $id]);
+                $this->editEnd($id, $edit_data);
+            } catch (HttpResponseException $e) {
+                Db::rollback();
+                throw $e;
+            } catch (\Exception $e) {
+                Db::rollback();
+                $this->returnFail($e->getMessage());
+            }
+            Db::commit();
+            $this->returnSuccess();
         }
+        $data = model($this->modelName)->find($id);
+        $this->assign($this->editAssign([
+            'id' => $id,
+            'data' => $data
+        ]));
+        return $this->fetch();
     }
 
     /**
      * 删除
      * @param Request $request
-     * @return Json
      * @throws Exception
      */
     public function delete(Request $request)
     {
         $id = $request->param('id');
-        if ($this->deleteTransaction) {
-            Db::startTrans();
-        }
         $data = model($this->modelName)->get($id);
         if (empty($data)) {
-            return $this->returnFail();
+            $this->returnFail();
         }
-        if ($data->delete()) {
-            $delEndRes = $this->deleteEnd($id);
-            if (is_object($delEndRes)) {
-                if ($this->deleteTransaction) {
-                    Db::rollback();
-                }
-                return $delEndRes;
-            }
-            if ($this->deleteTransaction) {
-                Db::commit();
-            }
-            return $this->returnSuccess();
-        } else {
-            if ($this->deleteTransaction) {
-                Db::rollback();
-            }
-            return $this->returnFail();
+        Db::startTrans();
+        try {
+            $data->delete();
+            $this->deleteEnd($id);
+        } catch (HttpResponseException $e) {
+            Db::rollback();
+            throw $e;
+        } catch (\Exception $e) {
+            Db::rollback();
+            $this->returnFail($e->getMessage());
         }
+        Db::commit();
+        $this->returnSuccess();
     }
 }

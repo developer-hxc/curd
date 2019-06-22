@@ -88,8 +88,9 @@ trait Common
 
     /**
      * 成功添加数据后的数据捕获
-     * @param $id @desc 添加后的id
-     * @param $data @desc 接受的参数，包含追加的
+     * 通过$this->returnFail($message);将错误信息返回到前端，并且回滚数据
+     * @param int $id 添加后的id
+     * @param mixed $data 接受的参数，包含追加的
      * @return mixed|void
      */
     public function addEnd($id, $data)
@@ -99,9 +100,10 @@ trait Common
 
     /**
      * 成功编辑数据后的数据捕获
-     * @param $id @desc 编辑数据的id
-     * @param $data @desc 接受的参数，包含追加的
-     * @return mixed|void
+     * 通过$this->returnFail($message);将错误信息返回到前端，并且回滚数据
+     * @param int $id 编辑数据的id
+     * @param mixed $data 接受的参数，包含追加的
+     * @return void
      */
     public function editEnd($id, $data)
     {
@@ -110,7 +112,8 @@ trait Common
 
     /**
      * 成功删除数据后的数据捕获
-     * @param $id @desc 要删除数据的id
+     * 通过$this->returnFail($message);将错误信息返回到前端，并且回滚数据
+     * @param int $id 要删除数据的id
      * @return mixed|void
      */
     public function deleteEnd($id)

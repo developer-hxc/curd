@@ -102,9 +102,13 @@ DOC;
         $output->writeln("Starting success");
         $output->writeln("---------------------------------------");
         $output->writeln("Url:/generate");
-        $output->writeln("Document path:/hxc.md");
+        $output->writeln("Document path:/hxc.lock");
         $output->writeln("---------------------------------------");
-        copy(__DIR__ . '/../config.php', APP_PATH . 'extra/curd.php');
+        $targetPath = APP_PATH . 'extra/';
+        if (!file_exists($targetPath)) {
+            mkdir($targetPath, 0777, true);
+        }
+        copy(__DIR__ . '/../config.php', $targetPath . 'curd.php');
         $output->writeln("Copy config file success");
         $output->writeln("---------------------------------------");
     }

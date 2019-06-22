@@ -60,7 +60,7 @@ class Generate
                 'data' => $data
             ];
         }
-        return json_encode($res);
+        return json($res);
     }
 
     /**
@@ -103,7 +103,7 @@ class Generate
      */
     public function getModelData()
     {
-        $model_path = ROOT_PATH . 'application\app\model\*.php';
+        $model_path = ROOT_PATH . 'application\common\model\*.php';
         $res = [];
         foreach (glob($model_path) as $k => $v) {
             $val = explode('.php', explode('\model\\', $v)[1])[0];
@@ -130,14 +130,14 @@ class Generate
             $data = json_decode($request->post('data'), true);
             $table_name = $request->post('tableName');
             if (!$table_name || !$data || !$data['selectVal']) {
-                return json_err(0, '参数错误');
+                return $this->res(false, '参数错误');
             }
             if ($data['selectVal'] == '后台') {
                 $dir = 'admin';
             } elseif ($data['selectVal'] == '前台') {
                 $dir = 'app';
             } else {
-                return json_err(0, '参数错误');
+                return $this->res(false, '参数错误');
             }
             $controller_name = $request->post('controllerName');
             if (!$controller_name) {
@@ -159,7 +159,7 @@ class Generate
                     $editField[] = "'{$v['name']}'";
                     $edit_field[$v['name']] = [
                         'label' => $v['label'],
-                        'tpl' => $tpl['table'][$v['business']],
+                        'tpl' => $tpl['form'][$v['business']],
                         'attr' => $v['require'] ? 'data-rule="required;"' : ''
                     ];
                     if ($v['require']) {
@@ -170,7 +170,7 @@ class Generate
                     $addField[] = "'{$v['name']}'";
                     $add_field[$v['name']] = [
                         'label' => $v['label'],
-                        'tpl' => $tpl['table'][$v['business']],
+                        'tpl' => $tpl['form'][$v['business']],
                         'attr' => $v['require'] ? 'data-rule="required;"' : ''
                     ];
                     if ($v['require']) {
@@ -179,7 +179,11 @@ class Generate
                 }
                 if ($v['search'] == true) {
                     $searchField[] = "'{$v['name']}'";
-                    $search_field[$v['name']] = $v['label'];
+                    $search_field[$v['name']] = [
+                        'label' => $v['label'],
+                        'tpl' => empty($tpl['search'][$v['business']]) ? 'input' : $tpl['search'][$v['business']],
+                        'attr' => ''
+                    ];
                 }
                 if (!empty($v['autotype'])) {
                     $autoType[$v['name']] = $v['autotype'];
@@ -213,9 +217,6 @@ class Generate
     protected \$searchField = [{$searchField}];
     protected \$orderField = '$orderField';  //排序字段
     protected \$pageLimit   = 10;               //分页数
-    protected \$addTransaction = false;        //添加事务是否开启，开启事务证明你需要在addEnd方法里追加业务逻辑
-    protected \$editTransaction = false;       //编辑事务是否开启，开启事务证明你需要在editEnd方法里追加业务逻辑
-    protected \$deleteTransaction = false;     //删除事务是否开启，开启事务证明你需要在deleteEnd方法里追加业务逻辑
     
     //增，数据检测规则
     protected \$add_rule = [
@@ -237,7 +238,6 @@ CODE;
                         return json_encode(['code' => 0, 'msg' => '模型已存在']);
                     }
                     $model_code = $this->getModelCode($model_name, $data, $autoType);
-//                    $model_code = $this->getModelCode($controller_name,$table_name,$data);
                     file_put_contents($model_path, $model_code);
                 }
                 if ($dir == 'admin' && $v == '视图') {
@@ -275,9 +275,9 @@ CODE;
             $namespace = 'namespace app\admin\controller;';
             $extends = 'extends Right implements curdInterface';
             $use = <<<USE
-use app\admin\library\hxc\Common;
-use app\admin\library\hxc\curd;
-use app\admin\library\hxc\curdInterface;
+use Hxc\Curd\Traits\Admin\Common;
+use Hxc\Curd\Traits\Admin\curd;
+use Hxc\Curd\Traits\Admin\curdInterface;
 USE;
             $html = <<<HTML
     /**
@@ -302,8 +302,8 @@ HTML;
             $use = <<<USE
 use think\Controller;
 use think\Request;
-use app\app\library\Common;
-use app\app\library\Curd;
+use Hxc\Curd\Traits\App\Common;
+use Hxc\Curd\Traits\App\Curd;
 USE;
         }
         return <<<CODE
@@ -321,6 +321,7 @@ CODE;
 
     /**
      * 获取前台的控制器代码
+     * @param $controller_name
      * @return string
      */
     protected function getAppControllerCode($controller_name)
@@ -343,7 +344,6 @@ HTML;
     /**
      * 获取模型代码
      * @param $model_name
-     * @param $table_name
      * @param $data
      * @param $autoType
      * @return string
@@ -351,17 +351,16 @@ HTML;
     public function getModelCode($model_name, $data, $autoType)
     {
         $mainCode = '';
-        $use = "use think\Model;\n";
+        $use = "use think\Model;\nuse Hxc\Curd\Traits\Model\Cache";
         $time_status = 'false';
+        $namespace = 'namespace app\common\model;';
         if ($data['selectVal'] == '前台') {
-            $namespace = 'namespace app\app\model;';
             if ($data['delete'] === '是') {
                 $use .= "use traits\model\SoftDelete;\n";
                 $mainCode = 'use SoftDelete;';
             }
             $time_status = ($data['time'] == '是' ? 'true' : 'false');
         } else {
-            $namespace = 'namespace app\admin\model;';
             if (in_array('开启软删', $data['model'])) {
                 $use .= "use traits\model\SoftDelete;\n";
                 $mainCode .= "use SoftDelete;\n";
@@ -388,6 +387,7 @@ HTML;
 
 class {$model_name} extends Model
 {
+    use Cache;
     {$mainCode}
     // 自动维护时间戳
     protected \$autoWriteTimestamp = {$time_status};
@@ -406,66 +406,25 @@ CODE;
      */
     public function getIndexViewCode($index_field, $search_field)
     {
-        $html1 = '';
-        $html2 = '';
-        $html3 = '';
+        $tableHeader = '';
+        $tableBody = '';
+        $searchField = '';
         foreach ($index_field as $k => $v) {
-            $html1 .= "            <th nowrap=\"nowrap\">{$v}</th>\n";
-            $html2 .= "                <td nowrap=\"nowrap\">{\$vo.{$k}}</td>\n";
+            $tableHeader .= "            <th nowrap=\"nowrap\">{$v}</th>\n";
+            $tableBody .= "                <td nowrap=\"nowrap\">{\$vo.{$k}}</td>\n";
         }
         foreach ($search_field as $k => $v) {
-            $html3 .= "        {include file=\"tpl/search\" results=\"params\" name=\"{$k}\" label=\"{$v}\" attr=''/}\n";
+            $searchField .= sprintf($v['tpl'], $k, $v['label']) . "\n";
+
+//            $searchField .= "        {include file=\"tpl/search\" results=\"params\" name=\"{$k}\" label=\"{$v}\" attr=''/}\n";
         }
-        return <<<CODE
-{include file="tpl/style"/}
-<form role="form" id="searchForm" action="{:url('index')}" method='post' class="form-horizontal">
-    <div class="form-group">
-{$html3}
-        <div class="col-xs-12">
-            <div class="col-xs-4 col-sm-3 col-md-2 col-lg-1 pull-left">
-                <div class="row">
-                    {include file='tpl/addBtn' url="add" height="80%" width="30%"/}
-                </div>
-            </div>
-            <div class="col-xs-4 col-sm-3 col-md-2 col-lg-1">
-                <div class="row">
-                    <span></span>
-                </div>
-            </div>
-            <div class="col-xs-4 col-sm-3 col-md-2 col-lg-1 pull-right">
-                <div class="row">
-                    {include file="tpl/searchBtn" /}
-                    {include file="tpl/reloadBtn" /}
-                </div>
-            </div>
-        </div>
-    </div>
-</form>
-<div class="table-responsive">
-    <table class="table table-bordered">
-        <thead>
-        <tr>
-{$html1}
-            <th nowrap="nowrap">操作</th>
-        </tr>
-        </thead>
-        <tbody>
-        {volist name="list" id="vo"}
-            <tr>
-{$html2}
-                <td nowrap="nowrap">
-                    <!--编辑资料-->
-                    <i class="fa fa-edit qg-op-btn qg-tooltip" data-toggle="tooltip" data-placement="top" title="编辑" onclick="modal('{:url(\'edit\',[\'id\'=>\$vo[\'id\']])}', '编辑','80%','50%')"></i>
-                    <!--删除-->
-                    <i class="fa fa-trash-o qg-tooltip qg-op-btn" data-toggle="tooltip" data-placement="top" title="删除" onclick="confirmUpdate('{:url(\'delete\')}','{\$vo.id}','确定要删除吗？')"></i>
-                </td>
-            </tr>
-        {/volist}
-        </tbody>
-    </table>
-    <div style="float: right;">{\$pagelist}</div>
-</div>
-CODE;
+
+        $templatePath = Config::get('curd.index_template');
+        if (empty($templatePath) || !file_exists($templatePath)) {
+            $templatePath = __DIR__ . '/../Templates/index.html';
+        }
+        $code = file_get_contents($templatePath);
+        return str_replace(['{{hxc_search_field}}', '{{hxc_table_header}}', '{{hxc_table_body}}'], [$searchField, $tableHeader, $tableBody], $code);
     }
 
     /**
@@ -477,25 +436,14 @@ CODE;
     {
         $html = '';
         foreach ($add_field as $k => $v) {
-            $html .= sprintf($v['tpl'], $k, $v['label'], '', $v['attr']) . "\n";
+            $html .= sprintf($v['tpl'], $k, $v['label'], $k, $v['attr']) . "\n";
         }
-        return <<<CODE
-{include file="common/fileinput"/}
-{include file="common/ueditor"/}
-{include file="tpl/style"/}
-<div class="col-xs-12">
-    <div class="row">
-        <form class="form-horizontal" role="form" id="form" action="{:url('add')}">
-            <div class="form-group">
-                {$html}
-            </div>
-            <div class="form-group" style="margin-top: 20px;">
-                {include file="tpl/button" label="保存"/}
-            </div>
-        </form>
-    </div>
-</div>
-CODE;
+        $templatePath = Config::get('curd.add_template');
+        if (empty($templatePath) || !file_exists($templatePath)) {
+            $templatePath = __DIR__ . '/../Templates/add.html';
+        }
+        $code = file_get_contents($templatePath);
+        return str_replace('{{curd_form_group}}', $html, $code);
     }
 
     /**
@@ -509,24 +457,12 @@ CODE;
         foreach ($edit_field as $k => $v) {
             $html .= sprintf($v['tpl'], $k, $v['label'], $k, $v['attr']) . "\n";
         }
-        return <<<CODE
-{include file="common/fileinput"/}
-{include file="common/ueditor"/}
-{include file="tpl/style"/}
-<div class="col-xs-12">
-    <div class="row">
-        <form class="form-horizontal" role="form" id="form" action="{:url('edit')}">
-            <div class="form-group">
-                <input type="hidden" name="id" value="{\$data.id}">
-                {$html}
-            </div>
-            <div class="form-group" style="margin-top: 20px;">
-                {include file="tpl/button" label="保存"/}
-            </div>
-        </form>
-    </div>
-</div>
-CODE;
+        $templatePath = Config::get('curd.edit_template');
+        if (empty($templatePath) || !file_exists($templatePath)) {
+            $templatePath = __DIR__ . '/../Templates/edit.html';
+        }
+        $code = file_get_contents($templatePath);
+        return str_replace('{{curd_form_group}}', $html, $code);
     }
 
     /**
@@ -538,7 +474,7 @@ CODE;
     {
         return <<<CODE
 <?php
-namespace app\app\\validate;
+namespace app\common\\validate;
 
 use think\Validate;
 
@@ -564,15 +500,17 @@ CODE;
 
     /**
      * 生成关联关系
+     * @param Request $request
+     * @return false|string
      */
     public function generateRelation(Request $request)
     {
         $params = $request->param();
         $model_name = $params['tableName'];
         $data = json_decode($params['data'], true);
-        $class_name = "app\app\model\\{$model_name}";
+        $class_name = "app\common\model\\{$model_name}";
         $model = new $class_name;
-        $path = APP_PATH . "app/model/{$model_name}.php";
+        $path = APP_PATH . "common/model/{$model_name}.php";
         $html = rtrim(file_get_contents($path), '}');
         foreach ($data['pageData'] as $k => $v) {
             if (is_array($v['business']) && !empty($v['business'])) {
@@ -590,6 +528,8 @@ CODE;
                         case 'mvm':
                             $has = "belongsToMany({$fun}::class,'{$v['business'][1]}');";
                             break;
+                        default:
+                            $has = '';
                     }
                     $html .= <<<CODE
                     
