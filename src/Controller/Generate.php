@@ -126,7 +126,7 @@ class Generate
     public function generate(Request $request)
     {
         if ($request->isPost()) {
-            $tpl = include(ROOT_PATH . 'tpl.php');
+            $tpl = Config::get('curd.');
             $data = json_decode($request->post('data'), true);
             $table_name = $request->post('tableName');
             if (!$table_name || !$data || !$data['selectVal']) {
