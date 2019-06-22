@@ -274,8 +274,12 @@ CODE;
     protected function getControllerCode($controller_name, $code, $data)
     {
         if ($data['selectVal'] == '后台') {
+            $baseController = Config::get('curd.base_controller');
+            if (empty($baseController)) {
+                $baseController = '\think\Controller';
+            }
             $namespace = 'namespace app\admin\controller;';
-            $extends = 'extends Right implements curdInterface';
+            $extends = 'extends ' . $baseController . ' implements curdInterface';
             $use = <<<USE
 use Hxc\Curd\Traits\Admin\Common;
 use Hxc\Curd\Traits\Admin\curd;
@@ -293,11 +297,19 @@ USE;
 {$code}
 HTML;
         } else {//前台
+            $baseController = Config::get('curd.front_base_controller');
+            if (empty($baseController)) {
+                $baseController = '\think\Controller';
+            }
+            $signController = Config::get('curd.front_sign_controller');
+            if (empty($signController)) {
+                $signController = $baseController;
+            }
             $namespace = 'namespace app\app\controller;';
             if ($data['login'] == '否') {
-                $extends = 'extends Controller';
+                $extends = 'extends ' . $baseController;
             } else {
-                $extends = 'extends SignInController';
+                $extends = 'extends ' . $signController;
             }
 
             $html = $this->getAppControllerCode($controller_name);
@@ -365,7 +377,7 @@ HTML;
     public function getModelCode($model_name, $data, $autoType)
     {
         $mainCode = '';
-        $use = "use think\Model;\nuse Hxc\Curd\Traits\Model\Cache";
+        $use = "use think\Model;\nuse Hxc\Curd\Traits\Model\Cache;";
         $time_status = 'false';
         $namespace = 'namespace app\common\model;';
         if ($data['selectVal'] == '前台') {
