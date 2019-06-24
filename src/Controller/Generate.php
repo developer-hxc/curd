@@ -126,7 +126,7 @@ class Generate
     public function generate(Request $request)
     {
         if ($request->isPost()) {
-            $tpl = Config::get('curd.');
+            $tpl = Config::get('curd');
             $data = json_decode($request->post('data'), true);
             $table_name = $request->post('tableName');
             if (!$table_name || !$data || !$data['selectVal']) {
@@ -199,8 +199,8 @@ class Generate
             $searchField = implode(',', $searchField);
             foreach ($data['fruit'] as $k => $v) {
                 if ($v == '控制器') {
-                    $controller_path = APP_PATH . "{$dir}/controller/{$controller_name}.php";
-                    if (file_exists($controller_path)) {
+                    $controller_path = APP_PATH . "{$dir}/controller/";
+                    if (file_exists($controller_path . "{$controller_name}.php")) {
                         return json_encode(['code' => 0, 'msg' => '控制器已存在']);
                     }
                     $controller_code = <<<CODE
@@ -231,16 +231,16 @@ class Generate
 CODE;
                     $controller_code = $this->getControllerCode($controller_name, $controller_code, $data);
                     $this->createPath($controller_path);
-                    file_put_contents($controller_path, $controller_code);
+                    file_put_contents($controller_path . "{$controller_name}.php", $controller_code);
                 }
                 if ($v == '模型') {
-                    $model_path = APP_PATH . "{$dir}/model/{$model_name}.php";
-                    if (file_exists($model_path)) {
+                    $model_path = APP_PATH . "common/model/";
+                    if (file_exists($model_path . "{$model_name}.php")) {
                         return json_encode(['code' => 0, 'msg' => '模型已存在']);
                     }
                     $model_code = $this->getModelCode($model_name, $data, $autoType);
                     $this->createPath($model_path);
-                    file_put_contents($model_path, $model_code);
+                    file_put_contents($model_path . "{$model_name}.php", $model_code);
                 }
                 if ($dir == 'admin' && $v == '视图') {
                     $view_dir_name = Loader::parseName($controller_name);
@@ -357,9 +357,6 @@ HTML;
 
     private function createPath($path)
     {
-        if (strpos($path, '.') !== false) {
-            $path = dirname($path);
-        }
         if (file_exists($path)) {
             return;
         }
@@ -500,7 +497,7 @@ CODE;
     {
         return <<<CODE
 <?php
-namespace app\common\\validate;
+namespace app\app\\validate;
 
 use think\Validate;
 
