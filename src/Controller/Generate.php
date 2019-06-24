@@ -231,7 +231,7 @@ class Generate extends Controller
 {$editRule}
     ];
 CODE;
-                    $controller_code = $this->getControllerCode($controller_name, $controller_code, $data);
+                    $controller_code = $this->getControllerCode($controller_name, $controller_code, $data, $model_name, $orderField);
                     $this->createPath($controller_path);
                     file_put_contents($controller_path . "{$controller_name}.php", $controller_code);
                 }
@@ -272,9 +272,11 @@ CODE;
      * @param $controller_name
      * @param $code
      * @param $data
+     * @param $model_name
+     * @param $order
      * @return string
      */
-    protected function getControllerCode($controller_name, $code, $data)
+    protected function getControllerCode($controller_name, $code, $data, $model_name, $order)
     {
         if ($data['selectVal'] == '后台') {
             $baseController = Config::get('curd.base_controller');
@@ -315,7 +317,7 @@ HTML;
                 $extends = 'extends ' . $signController;
             }
 
-            $html = $this->getAppControllerCode($controller_name);
+            $html = $this->getAppControllerCode($controller_name, $model_name, $order);
             $use = <<<USE
 use think\Controller;
 use think\Request;
@@ -339,9 +341,11 @@ CODE;
     /**
      * 获取前台的控制器代码
      * @param $controller_name
+     * @param $model_name
+     * @param $order
      * @return string
      */
-    protected function getAppControllerCode($controller_name)
+    protected function getAppControllerCode($controller_name, $model_name, $order)
     {
         return <<<HTML
     /**
@@ -349,11 +353,16 @@ CODE;
     */
     use Common,Curd;
     
-    protected \$model = '{$controller_name}';
-    
+    protected \$model = '{$model_name}';
+ 
+    protected \$validate = '{$controller_name}'; 
+   
+ 
     protected \$with = '';//关联关系
     
     protected \$cache = true;//是否开启缓存查询，开启后每次增加，修改，删除都会刷新缓存
+    
+    protected \$order = '{$order}'; //排序字段
 
 HTML;
     }
@@ -534,7 +543,6 @@ CODE;
     /**
      * 生成关联关系
      * @param Request $request
-     * @return false|string
      */
     public function generateRelation(Request $request)
     {

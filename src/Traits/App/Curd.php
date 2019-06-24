@@ -12,6 +12,7 @@ use think\response\Json;
  * @property string $model
  * @property string $with
  * @property string $cache
+ * @property string $order
  * @method array|string|true validate($data, $validate, $message = [], $batch = false, $callback = null)
  * @mixin Common
  */
@@ -62,12 +63,19 @@ trait Curd
     protected function get($request)
     {
         if ($request->isGet()) {
-            $sql = model($this->model)->with($this->with);
+            $id = $request->param('id');
+            $sql = model($this->model)->with($this->with)->order($this->order);
             if ($this->cache) {
-                $sql = $sql->cache(true, 0, 'controller');
+                $sql = $sql->cache(true, 0, $this->model . 'cache_data');
             }
-            $res = $sql->paginate($this->limit);
-            $this->returnRes($res->toArray()['data'], '数据不存在', $res);
+            if ($id) {
+                $res = $sql->find($id);
+                $flag = $res;
+            } else {
+                $res = $sql->paginate($this->limit);
+                $flag = $res->toArray()['data'];
+            }
+            $this->returnSuccess($res);
         }
     }
 
