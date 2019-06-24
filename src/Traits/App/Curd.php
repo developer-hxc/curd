@@ -13,10 +13,10 @@ use think\response\Json;
  * @property string $with
  * @property string $cache
  * @method array|string|true validate($data, $validate, $message = [], $batch = false, $callback = null)
+ * @mixin Common
  */
 trait Curd
 {
-    use Common;
     /**
      * 每页显示的数量
      * @var int

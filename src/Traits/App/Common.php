@@ -2,7 +2,7 @@
 
 namespace Hxc\Curd\Traits\App;
 
-use hxc\Curd\Traits\JsonReturn;
+use Hxc\Curd\Traits\JsonReturn;
 use think\Cache;
 use think\Request;
 use think\response\Json;

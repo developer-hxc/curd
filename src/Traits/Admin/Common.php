@@ -3,7 +3,7 @@
 namespace Hxc\Curd\Traits\Admin;
 
 
-use hxc\Curd\Traits\JsonReturn;
+use Hxc\Curd\Traits\JsonReturn;
 
 trait Common
 {

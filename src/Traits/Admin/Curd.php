@@ -28,15 +28,12 @@ use think\Validate;
  * @property array $editField
  * @property array $add_rule
  * @property array $edit_rule
- * @property boolean $addTransaction
- * @property boolean $editTransaction
- * @property boolean $deleteTransaction
  * @method mixed assign($name, $value = '')
  * @method mixed fetch($template = '', $vars = [], $replace = [], $config = [])
+ * @mixin Common
  */
 trait Curd
 {
-    use Common;
 
     /**
      * 列表页

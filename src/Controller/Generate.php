@@ -4,14 +4,16 @@ namespace Hxc\curd\Controller;
 
 
 use think\Config;
+use think\Controller;
 use think\Db;
 use think\Loader;
 use think\Request;
 
-class Generate
+class Generate extends Controller
 {
     public function __construct()
     {
+        parent::__construct();
         if (!file_exists(ROOT_PATH . '/hxc.lock')) {
             echo '无权操作';
             die;
@@ -201,7 +203,7 @@ class Generate
                 if ($v == '控制器') {
                     $controller_path = APP_PATH . "{$dir}/controller/";
                     if (file_exists($controller_path . "{$controller_name}.php")) {
-                        return json_encode(['code' => 0, 'msg' => '控制器已存在']);
+                        $this->error('控制器已存在');
                     }
                     $controller_code = <<<CODE
     protected \$modelName  = '{$model_name}';  //模型名,用于add和update方法
@@ -236,7 +238,7 @@ CODE;
                 if ($v == '模型') {
                     $model_path = APP_PATH . "common/model/";
                     if (file_exists($model_path . "{$model_name}.php")) {
-                        return json_encode(['code' => 0, 'msg' => '模型已存在']);
+                        $this->error('模型已存在');
                     }
                     $model_code = $this->getModelCode($model_name, $data, $autoType);
                     $this->createPath($model_path);
@@ -246,7 +248,7 @@ CODE;
                     $view_dir_name = Loader::parseName($controller_name);
                     $view_dir = APP_PATH . "{$dir}/view/{$view_dir_name}/";
                     if (is_dir($view_dir)) {
-                        return json_encode(['code' => 0, 'msg' => '视图目录已存在']);
+                        $this->error('视图目录已存在');
                     } else {
                         $this->createPath($view_dir);
                         file_put_contents($view_dir . 'index.html', $this->getIndexViewCode($index_field, $search_field));
@@ -256,11 +258,12 @@ CODE;
                 }
                 if ($dir == 'app') {//创建验证文件
                     $validate_path = APP_PATH . "{$dir}/validate/{$controller_name}.php";
+                    $this->createPath(APP_PATH . "{$dir}/validate/");
                     $validate_code = $this->getValidateCode($controller_name);
                     file_put_contents($validate_path, $validate_code);
                 }
             }
-            return json_encode(['code' => 1]);
+            $this->success();
         }
     }
 
@@ -282,8 +285,8 @@ CODE;
             $extends = 'extends ' . $baseController . ' implements curdInterface';
             $use = <<<USE
 use Hxc\Curd\Traits\Admin\Common;
-use Hxc\Curd\Traits\Admin\curd;
-use Hxc\Curd\Traits\Admin\curdInterface;
+use Hxc\Curd\Traits\Admin\Curd;
+use Hxc\Curd\Traits\Admin\CurdInterface;
 USE;
             $html = <<<HTML
     /**
@@ -292,7 +295,7 @@ USE;
      * 如果需要进行业务追加操作，请复制Common中的对应的钩子方法到此控制器中后在进行操作
      * Happy Coding
      **/
-    use curd, Common;
+    use Curd, Common;
 
 {$code}
 HTML;
@@ -438,13 +441,14 @@ CODE;
         }
         foreach ($search_field as $k => $v) {
             $searchField .= sprintf($v['tpl'], $k, $v['label']) . "\n";
-
-//            $searchField .= "        {include file=\"tpl/search\" results=\"params\" name=\"{$k}\" label=\"{$v}\" attr=''/}\n";
         }
 
         $templatePath = Config::get('curd.index_template');
-        if (empty($templatePath) || !file_exists($templatePath)) {
+        if (empty($templatePath)) {
             $templatePath = __DIR__ . '/../Templates/index.html';
+        }
+        if (!file_exists($templatePath)) {
+            $this->error('模板文件不存在:' . $templatePath);
         }
         $code = file_get_contents($templatePath);
         return str_replace(['{{hxc_search_field}}', '{{hxc_table_header}}', '{{hxc_table_body}}'], [$searchField, $tableHeader, $tableBody], $code);
@@ -462,8 +466,11 @@ CODE;
             $html .= sprintf($v['tpl'], $k, $v['label'], $k, $v['attr']) . "\n";
         }
         $templatePath = Config::get('curd.add_template');
-        if (empty($templatePath) || !file_exists($templatePath)) {
+        if (empty($templatePath)) {
             $templatePath = __DIR__ . '/../Templates/add.html';
+        }
+        if (!file_exists($templatePath)) {
+            $this->error('模板文件不存在:' . $templatePath);
         }
         $code = file_get_contents($templatePath);
         return str_replace('{{curd_form_group}}', $html, $code);
@@ -481,8 +488,11 @@ CODE;
             $html .= sprintf($v['tpl'], $k, $v['label'], $k, $v['attr']) . "\n";
         }
         $templatePath = Config::get('curd.edit_template');
-        if (empty($templatePath) || !file_exists($templatePath)) {
+        if (empty($templatePath)) {
             $templatePath = __DIR__ . '/../Templates/edit.html';
+        }
+        if (!file_exists($templatePath)) {
+            $this->error('模板文件不存在:' . $templatePath);
         }
         $code = file_get_contents($templatePath);
         return str_replace('{{curd_form_group}}', $html, $code);
@@ -571,6 +581,6 @@ CODE;
 }
 CODE;
         file_put_contents($path, $html);
-        return json_encode(['code' => 1]);
+        $this->success();
     }
 }
