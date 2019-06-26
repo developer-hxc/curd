@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <title>桥通天下Qframe框架代码生成工具</title>
-    <script src="//vuejs.org/js/vue.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.10/dist/vue.min.js"></script>
     <link rel="stylesheet" href="//unpkg.com/iview/dist/styles/iview.css">
-    <script src="//unpkg.com/iview/dist/iview.min.js"></script>
-    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script src="https://unpkg.com/iview@3.4.2/dist/iview.min.js"></script>
+    <script src="https://unpkg.com/axios@0.19.0/dist/axios.min.js"></script>
     <style>
         .hxc-heder {
             color: white;
@@ -32,7 +32,6 @@
         <i-header class="hxc-heder">
             <h3>
                 {{titleStatus == 1 ? `桥通天下Qframe框架代码生成工具（${create.selectVal}）`: '桥通天下Qframe框架关联关系生成'}}
-
                 <Dropdown @on-click="dropdownClick">
                     <a href="javascript:void(0)">
                         功能切换
@@ -46,6 +45,7 @@
             </h3>
         </i-header>
         <i-content class="hxc-content" v-if="titleStatus==1">
+            <div class="hxc-table-wrap">*模型位于application/common/model目录，前后台通用。</div>
             <div class="hxc-table-wrap">
                 <span>业务选择：</span>
                 <radio-group type="button" v-model="create.selectVal">
@@ -60,41 +60,25 @@
                     </i-option>
                 </i-select>
             </div>
-            <div style="margin-bottom: 20px" v-if="create.selectVal == '后台'">
+            <div style="margin-bottom: 20px">
                 <checkbox-group v-model="create.fruit">
                     创建：
                     <Checkbox label="控制器"></Checkbox>
                     <Checkbox label="模型"></Checkbox>
-                    <Checkbox label="视图" v-if></Checkbox>
+                    <Checkbox label="视图" v-if="create.selectVal == '后台'"></Checkbox>
                 </checkbox-group>
             </div>
             <div style="margin-bottom: 20px">
-                <checkbox-group v-model="create.fruit">
-                    控制器名称：
-                    <i-input v-model="controllerName" prefix="ios-construct" placeholder="如果不填写则按照表名命名"
-                             style="width: auto"/>
-                </checkbox-group>
+                控制器名称：
+                <i-input v-model="controllerName" prefix="ios-construct" placeholder="如果不填写则按照表名命名"
+                         style="width: auto"/>
             </div>
-            <div style="margin-bottom: 20px" v-if="create.selectVal == '后台'">
+            <div style="margin-bottom: 20px">
                 <checkbox-group v-model="create.model">
                     模型选项：
                     <Checkbox label="自动时间戳"></Checkbox>
                     <Checkbox label="开启软删"></Checkbox>
                 </checkbox-group>
-            </div>
-            <div style="margin-bottom: 20px" v-if="create.selectVal == '前台'">
-                软删除：
-                <radio-group v-model="create.delete" type="button">
-                    <Radio label="是"></Radio>
-                    <Radio label="否"></Radio>
-                </radio-group>
-            </div>
-            <div style="margin-bottom: 20px" v-if="create.selectVal == '前台'">
-                自动维护时间戳：
-                <radio-group v-model="create.time" type="button">
-                    <Radio label="是"></Radio>
-                    <Radio label="否"></Radio>
-                </radio-group>
             </div>
             <div style="margin-bottom: 20px" v-if="create.selectVal == '前台'">
                 登录访问：
@@ -104,8 +88,57 @@
                 </radio-group>
             </div>
             <i-table border :columns="columns" :data="create.pageData">
-                <template slot-scope="{ row,index }" slot="table">
-                    <Cascader :data="cascaderData" transfer v-model="create.pageData[index].table"></Cascader>
+                <template slot-scope="{ row, index }" slot="showName">
+                    <i-input type="text" v-model="create.pageData[index].label"/>
+                </template>
+                <template slot-scope="{ row, index }" slot="curd">
+                    <checkbox-group v-model="create.pageData[index].curd">
+                        <Checkbox label="增"></Checkbox>
+                        <Checkbox label="改"></Checkbox>
+                        <Checkbox label="查"></Checkbox>
+                    </checkbox-group>
+                </template>
+                <template slot-scope="{ row, index }" slot="search">
+                    <i-switch v-model="create.pageData[index].search">
+                        <span slot="open">是</span>
+                        <span slot="close">否</span>
+                    </i-switch>
+                </template>
+                <template slot-scope="{ row, index }" slot="business">
+                    <i-select v-model="create.pageData[index].business" :transfer="true">
+                        <i-option value="text">文本</i-option>
+                        <i-option value="number">整数</i-option>
+                        <i-option value="date">日期选择</i-option>
+                        <i-option value="datetime">日期时间选择</i-option>
+                        <i-option value="select">选择器</i-option>
+                        <i-option value="uploadImage">上传图片</i-option>
+                        <i-option value="ueditor">富文本编辑器</i-option>
+                        <i-option value="textarea">多行文本</i-option>
+                    </i-select>
+                </template>
+                <template slot-scope="{ row, index }" slot="sort">
+                    <i-select v-model="create.pageData[index].sort" :transfer="true" :clearable="true">
+                        <i-option value="asc">升序</i-option>
+                        <i-option value="desc">降序</i-option>
+                    </i-select>
+                </template>
+                <template slot-scope="{ row, index }" slot="require">
+                    <i-switch v-model="create.pageData[index].require">
+                        <span slot="open">是</span>
+                        <span slot="close">否</span>
+                    </i-switch>
+                </template>
+                <template slot-scope="{ row, index }" slot="autotype">
+                    <i-select v-model="create.pageData[index].autotype" :transfer="true" :clearable="true">
+                        <i-option value="serialize">serialize</i-option>
+                        <i-option value="json">json</i-option>
+                        <i-option value="datetime">datetime</i-option>
+                        <i-option value="integer">integer</i-option>
+                        <i-option value="float">float</i-option>
+                        <i-option value="boolean">boolean</i-option>
+                        <i-option value="array">array</i-option>
+                        <i-option value="object">object</i-option>
+                    </i-select>
                 </template>
             </i-table>
             <i-button type="primary" long style="margin-top: 20px" size="large" :disabled="buttonDisabled"
@@ -113,7 +146,6 @@
             </i-button>
         </i-content>
         <i-content class="hxc-content" v-else>
-            <div class="hxc-table-wrap">*目前仅支持前台的关联关系！！！</div>
             <div class="hxc-table-wrap">
                 模型：
                 <i-select style="width:200px" v-model="tableName" @on-change="modelChange">
@@ -146,8 +178,6 @@
 </div>
 </body>
 <script>
-    var dealCounts = 0,
-        dataLength = 2;
     new Vue({
         el: '#app',
         data() {
@@ -176,7 +206,7 @@
         },
         methods: {
             relationDataChange(value, selectedData, index) {
-                this.create.pageData[index].table = []
+                this.create.pageData[index].table = [];
                 this.create.pageData[index].selectStatus = false
             },
             cascaderChange() {
@@ -186,15 +216,10 @@
                 this.titleStatus = name
             },
             getColumns() {
-                var data = [
+                let data = [
                     {
                         title: '字段',
                         key: 'name',
-                        render: (h, params) => {
-                            return h('div', [
-                                h('strong', params.row.name)
-                            ]);
-                        }
                     },
                     {
                         title: '类型',
@@ -204,253 +229,40 @@
                         title: '注释',
                         key: 'comment'
                     },
-                ]
+                ];
                 if (this.titleStatus == 1) {
+                    data.push( {
+                        title: '名称',
+                        slot: 'showName',
+                    });
                     if (this.create.selectVal == '后台') {
                         data.push({
-                                title: '名称',
-                                key: 'label',
-                                render: (h, params) => {
-                                    return h('i-input', {
-                                            props: {
-                                                placeholder: '请输入字段要显示的名称',
-                                                value: this.create.pageData[params.index].label
-                                            },
-                                            on: {
-                                                'on-blur': (event) => {
-                                                    Vue.set(this.create.pageData[params.index], 'label', event.target.value)
-                                                }
-                                            }
-                                        }
-                                    );
-                                }
-                            }, {
                                 title: '操作',
-                                render: (h, params) => {
-                                    return h('CheckboxGroup', {
-                                        props: {
-                                            value: this.create.pageData[params.index].curd
-                                        },
-                                        on: {
-                                            'on-change': (event) => {
-                                                Vue.set(this.create.pageData[params.index], 'curd', event)
-                                            }
-                                        }
-                                    }, [
-                                        h('Checkbox', {
-                                            props: {
-                                                label: '增'
-                                            }
-                                        }),
-                                        h('Checkbox', {
-                                            props: {
-                                                label: '改'
-                                            }
-                                        }),
-                                        h('Checkbox', {
-                                            props: {
-                                                label: '查'
-                                            }
-                                        }),
-                                    ]);
-                                }
+                                slot: 'curd',
                             },
                             {
                                 title: '检索',
-                                key: 'search',
-                                render: (h, params) => {
-                                    return h('i-switch', {
-                                        props: {
-                                            value: this.create.pageData[params.index].search
-                                        },
-                                        on: {
-                                            'on-change': (event) => {
-                                                Vue.set(this.create.pageData[params.index], 'search', event)
-                                            }
-                                        }
-                                    }, [
-                                        h('span', {
-                                            slot: 'open',
-                                        }, '是'),
-                                        h('span', {
-                                            slot: 'close'
-                                        }, '否')
-                                    ])
-                                }
+                                slot: 'search',
                             },
                             {
                                 title: '业务类型',
-                                render: (h, params) => {
-                                    return h('i-select', {
-                                        props: {
-                                            value: this.create.pageData[params.index].business,
-                                            transfer: true
-                                        },
-                                        on: {
-                                            'on-change': (event) => {
-                                                Vue.set(this.create.pageData[params.index], 'business', event)
-                                            }
-                                        }
-                                    }, [
-                                        h('i-option', {
-                                            props: {
-                                                value: 'text'
-                                            }
-                                        }, '文本'),
-                                        h('i-option', {
-                                            props: {
-                                                value: 'number'
-                                            }
-                                        }, '数字'),
-                                        h('i-option', {
-                                            props: {
-                                                value: 'date'
-                                            }
-                                        }, '日期选择'),
-                                        h('i-option', {
-                                            props: {
-                                                value: 'datetime'
-                                            }
-                                        }, '日期时间选择'),
-                                        h('i-option', {
-                                            props: {
-                                                value: 'select'
-                                            }
-                                        }, '选择器'),
-                                        h('i-option', {
-                                            props: {
-                                                value: 'uploadImage'
-                                            }
-                                        }, '上传图片'),
-                                        h('i-option', {
-                                            props: {
-                                                value: 'ueditor'
-                                            }
-                                        }, '富文本编辑器'),
-                                        h('i-option', {
-                                            props: {
-                                                value: 'textarea'
-                                            }
-                                        }, '多行文本'),
-                                    ]);
-                                }
-                            },
-                            {
-                                title: '排序',
-                                render: (h, params) => {
-                                    return h('i-select', {
-                                        props: {
-                                            value: this.create.pageData[params.index].sort,
-                                            transfer: true,
-                                            clearable: true
-                                        },
-                                        on: {
-                                            'on-change': (event) => {
-                                                Vue.set(this.create.pageData[params.index], 'sort', event)
-                                            }
-                                        }
-                                    }, [
-                                        h('i-option', {
-                                            props: {
-                                                value: 'asc'
-                                            }
-                                        }, '升序'),
-                                        h('i-option', {
-                                            props: {
-                                                value: 'desc'
-                                            }
-                                        }, '降序'),
-                                    ]);
-                                }
-                            },
-                            {
-                                title: '必填',
-                                width: 80,
-                                align: 'center',
-                                render: (h, params) => {
-                                    return h('i-switch', {
-                                        props: {
-                                            value: this.create.pageData[params.index].require
-                                        },
-                                        on: {
-                                            'on-change': (event) => {
-                                                Vue.set(this.create.pageData[params.index], 'require', event)
-                                            }
-                                        }
-                                    }, [
-                                        h('span', {
-                                            slot: 'open',
-                                        }, '是'),
-                                        h('span', {
-                                            slot: 'close'
-                                        }, '否')
-                                    ])
-                                },
-                            },
-                            {
-                                title: '类型自动转换',
-                                render: (h, params) => {
-                                    return h('i-select', {
-                                        props: {
-                                            value: this.create.pageData[params.index].autotype,
-                                            transfer: true,
-                                            clearable: true
-                                        },
-                                        on: {
-                                            'on-change': (event) => {
-                                                Vue.set(this.create.pageData[params.index], 'autotype', event)
-                                            }
-                                        }
-                                    }, [
-                                        h('i-option', {
-                                            props: {
-                                                value: 'serialize'
-                                            }
-                                        }, 'serialize'),
-                                        h('i-option', {
-                                            props: {
-                                                value: 'json'
-                                            }
-                                        }, 'json'),
-                                        h('i-option', {
-                                            props: {
-                                                value: 'timestamp'
-                                            }
-                                        }, 'timestamp'),
-                                        h('i-option', {
-                                            props: {
-                                                value: 'datetime'
-                                            }
-                                        }, 'datetime'),
-                                        h('i-option', {
-                                            props: {
-                                                value: 'integer'
-                                            }
-                                        }, 'integer'),
-                                        h('i-option', {
-                                            props: {
-                                                value: 'float'
-                                            }
-                                        }, 'float'),
-                                        h('i-option', {
-                                            props: {
-                                                value: 'boolean'
-                                            }
-                                        }, 'boolean'),
-                                        h('i-option', {
-                                            props: {
-                                                value: 'array'
-                                            }
-                                        }, 'array'),
-                                        h('i-option', {
-                                            props: {
-                                                value: 'object'
-                                            }
-                                        }, 'object'),
-                                    ]);
-                                }
+                                slot: 'business',
                             })
                     }
+                    data.push({
+                            title: '排序',
+                            slot: 'sort',
+                        },
+                        {
+                            title: '必填',
+                            width: 80,
+                            align: 'center',
+                            slot: 'require'
+                        },
+                        {
+                            title: '类型自动转换',
+                            slot: 'autotype',
+                        })
                 }
                 if (this.titleStatus == 2) {
                     data.push(
@@ -475,7 +287,7 @@
                 axios.get('/generate/showTables').then(
                     res => {
                         if (res.data.code) {
-                            this.tableData = res.data.data
+                            this.tableData = res.data.data;
                             this.relationData = [
                                 {
                                     value: '1v1',
@@ -498,17 +310,17 @@
                 )
             },
             clone(obj) {
-                var buf;
+                let buf;
                 if (obj instanceof Array) {
                     buf = [];
-                    var i = obj.length;
+                    let i = obj.length;
                     while (i--) {
                         buf[i] = this.clone(obj[i]);
                     }
                     return buf;
                 } else if (obj instanceof Object) {
                     buf = {};
-                    for (var k in obj) {
+                    for (let k in obj) {
                         buf[k] = this.clone(obj[k]);
                     }
                     return buf;
@@ -519,10 +331,10 @@
                 axios.get('/generate/getModelData').then(
                     res => {
                         if (res.data.code) {
-                            this.cascaderData = res.data.data
-                            this.modelData = res.data.data
-                            this.mvmModeldata = this.clone(res.data.data)
-                            for (var x in this.mvmModeldata) {
+                            this.cascaderData = res.data.data;
+                            this.modelData = res.data.data;
+                            this.mvmModeldata = this.clone(res.data.data);
+                            for (let x in this.mvmModeldata) {
                                 delete this.mvmModeldata[x].loading
                             }
                         }
@@ -530,7 +342,6 @@
                 )
             },
             getTableFieldData(table, isModel) {
-                this.reset()
                 //获取对应数据表的字段数据
                 axios.post('/generate/getTableFieldData', {table, isModel}).then(
                     res => {
@@ -551,6 +362,8 @@
                                     subItem.curd = ['查'];
                                 } else if (subItem.name == 'update_time' || subItem.name == 'delete_time') {
                                     subItem.curd = [];
+                                } else if (subItem.name == 'id') {
+                                    subItem.curd = ['查'];
                                 } else {
                                     subItem.curd = ['增', '改', '查'];
                                 }
@@ -566,7 +379,7 @@
                                     subItem.business = 'ueditor';
                                 } else if (subItem.name == 'status' || subItem.name.search('_id') > 0) {
                                     subItem.business = 'select';
-                                } else if (subItem.type.search('char') >= 0 && subItem.length > 256) {
+                                } else if (subItem.type.search('char') >= 0 && subItem.length >= 256) {
                                     subItem.business = 'textarea';
                                 } else if (subItem.type.search('int') >= 0) {
                                     subItem.business = 'number';
@@ -612,16 +425,19 @@
             generate() {
                 //生成代码按钮
                 axios.post('/generate/generate', {
-                    data: JSON.stringify(this.create),
+                    data: this.create,
                     tableName: this.tableName,
                     controllerName: this.controllerName
                 }).then(
                     res => {
-                        if (res.data.code) {
-                            this.$Message.success('代码生成成功')
-                        } else {
-                            this.$Message.error(res.data.msg);
-                        }
+                        this.$Notice.open({
+                            title: '操作完成',
+                            desc: res.data.msg
+                        });
+                        // this.$Message.info({
+                        //     content: res.data.msg,
+                        //     duration: 10,
+                        // });
                     }
                 );
             },
@@ -647,7 +463,7 @@
                 axios.post('/generate/getTableFieldData', {table: item.value, isModel: true}).then(
                     res => {
                         if (res.data.code) {
-                            for (var x in res.data.data) {
+                            for (let x in res.data.data) {
                                 item.children.push({
                                     value: res.data.data[x].name,
                                     label: res.data.data[x].name
@@ -660,27 +476,24 @@
                         callback();
                     }
                 )
-            },
-            reset() {
-                this.create.time = '否'
             }
         },
         computed: {
             getSelectVal() {
                 return this.create.selectVal
             },
-            getTime() {
-                return this.create.time
+            getModel() {
+                return this.create.model
             }
         },
         watch: {
             getSelectVal(new_val, old_val) {
-                this.create.selectVal = new_val
+                this.create.selectVal = new_val;
                 this.columns = this.getColumns()
             },
             titleStatus(new_val, old_val) {
-                if (new_val == 2) {
-                    this.getModelData()
+                if (new_val === 2) {
+                    this.getModelData();
                     this.$Notice.info({
                         title: '关于生成关系说明',
                         desc: '<h4>1、如果模型中方法已经存在不替换，不会被替换</h4><h4>2、生成关联关系后，不会自动添加到控制器，需要手动实现</h4><h4>3、关联方法名按照关联表的表名命名</h4>'
@@ -688,47 +501,63 @@
                 }
                 this.columns = this.getColumns()
             },
-            getTime(new_val, old_val) {
-                if (new_val == '是') {
-                    var updateTips = false;
-                    var createTips = false;
-                    for (var x in this.create.pageData) {
-                        if (this.create.pageData[x].name == 'create_time') {
-                            createTips = this.create.pageData[x].type
-                        }
-                        if (this.create.pageData[x].name == 'update_time') {
-                            updateTips = this.create.pageData[x].type
-                        }
+            getModel(new_val, old_val) {
+                let updateTips = false;
+                let createTips = false;
+                let deleteTips = false;
+                for (let x in this.create.pageData) {
+                    if (this.create.pageData[x].name === 'create_time') {
+                        createTips = this.create.pageData[x].type
                     }
+                    if (this.create.pageData[x].name === 'update_time') {
+                        updateTips = this.create.pageData[x].type
+                    }
+                    if (this.create.pageData[x].name === 'delete_time') {
+                        deleteTips = this.create.pageData[x].type
+                    }
+                }
+                if (new_val.indexOf('自动时间戳') >= 0 && old_val.indexOf('自动时间戳') < 0) {
                     if (!createTips) {
                         this.$Notice.info({
                             title: '关于自动维护时间戳',
                             desc: '表中没有create_time字段，如果执意开启，请自行设置'
                         });
-                    } else if (!updateTips) {
+                    } else if (createTips.indexOf('int') < 0) {
+                        this.$Notice.info({
+                            title: '关于自动维护时间戳',
+                            desc: '表中的create_time字段不是数字类型，如果执意开启，请自行设置'
+                        });
+                    }
+                    if (!updateTips) {
                         this.$Notice.info({
                             title: '关于自动维护时间戳',
                             desc: '表中没有update_time字段，如果执意开启，请自行设置'
                         });
-                    } else {
-                        if (createTips.indexOf('int') < 0) {
-                            this.$Notice.info({
-                                title: '关于自动维护时间戳',
-                                desc: '表中的create_time字段不是数字类型，如果执意开启，请自行设置'
-                            });
-                        } else if (updateTips.indexOf('int') < 0) {
-                            this.$Notice.info({
-                                title: '关于自动维护时间戳',
-                                desc: '表中的update_time字段不是数字类型，如果执意开启，请自行设置'
-                            });
-                        }
+                    } else if (updateTips.indexOf('int') < 0) {
+                        this.$Notice.info({
+                            title: '关于自动维护时间戳',
+                            desc: '表中的update_time字段不是数字类型，如果执意开启，请自行设置'
+                        });
+                    }
+                }
+                if (new_val.indexOf('开启软删') >= 0 && old_val.indexOf('开启软删') < 0) {
+                    if (!createTips) {
+                        this.$Notice.info({
+                            title: '关于软删',
+                            desc: '表中没有delete_time字段，如果执意开启，请自行设置'
+                        });
+                    } else if (createTips.indexOf('int') < 0) {
+                        this.$Notice.info({
+                            title: '关于软删',
+                            desc: '表中的delete_time字段不是数字类型，如果执意开启，请自行设置'
+                        });
                     }
                 }
             }
         },
         created() {
-            this.getModelData()
-            this.getTableData()
+            this.getModelData();
+            this.getTableData();
             this.columns = this.getColumns()
         }
     })

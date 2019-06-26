@@ -133,6 +133,9 @@ trait Curd
                 $this->returnFail($params_status);
             }
             $data = model($this->model)->get($params['id']);
+            if (empty($data)) {
+                $this->returnFail('数据不存在');
+            }
             $res = $data->delete();
             $this->returnRes($res, '删除失败');
         }

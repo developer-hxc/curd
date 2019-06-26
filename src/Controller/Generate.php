@@ -6,18 +6,20 @@ namespace Hxc\curd\Controller;
 use think\Config;
 use think\Controller;
 use think\Db;
+use think\exception\HttpException;
+use think\exception\HttpResponseException;
 use think\Loader;
 use think\Request;
 
 class Generate extends Controller
 {
-    public function __construct()
+    public function _initialize()
     {
-        parent::__construct();
-        if (!file_exists(ROOT_PATH . '/hxc.lock')) {
-            echo '无权操作';
-            die;
+        parent::_initialize();
+        if (!Config::get('app_debug')) {
+            throw new HttpException(404, 'module not exists:Generate');
         }
+        Config::set('default_return_type', 'json');
     }
 
     public function index()
@@ -40,16 +42,15 @@ class Generate extends Controller
                 $res[$k]['label'] = str_replace($prefix, '', $v['Tables_in_' . $database]);
             }
         }
-        return $this->res($res, '没有数据表，请添加数据表后刷新重试');
+        $this->res($res, '没有数据表，请添加数据表后刷新重试');
     }
 
     /**
      * 统一返回
      * @param $data
      * @param string $errorTips
-     * @return false|string
      */
-    protected function res($data, $errorTips = '')
+    private function res($data, $errorTips = '')
     {
         if (!$data || empty($data)) {
             $res = [
@@ -62,7 +63,7 @@ class Generate extends Controller
                 'data' => $data
             ];
         }
-        return json($res);
+        throw new HttpResponseException(json($res));
     }
 
     /**
@@ -76,7 +77,7 @@ class Generate extends Controller
             $table = $request->param('table');
             $is_model = $request->param('isModel');
             if ($is_model) {
-                $model = model("app\app\model\\$table");
+                $model = model("app\common\model\\$table");
                 $table = $model->getTable();
             }
             $prefix = Config::get('database.prefix');
@@ -95,13 +96,12 @@ class Generate extends Controller
                     $res[$k]['length'] = preg_replace('/\D/s', '', $v['Type']);//字段长度，不严谨
                 }
             }
-            return $this->res($res, '数据表中未定义字段，请添加后刷新重试');
+            $this->res($res, '数据表中未定义字段，请添加后刷新重试');
         }
     }
 
     /**
      * 获取模型
-     * @return false|string
      */
     public function getModelData()
     {
@@ -117,7 +117,7 @@ class Generate extends Controller
             ];
             $res[] = $arr;
         }
-        return $this->res($res, '没有控制器');
+        $this->res($res, '没有模型');
     }
 
     /**
@@ -128,85 +128,265 @@ class Generate extends Controller
     public function generate(Request $request)
     {
         if ($request->isPost()) {
-            $tpl = Config::get('curd');
-            $data = json_decode($request->post('data'), true);
-            $table_name = $request->post('tableName');
-            if (!$table_name || !$data || !$data['selectVal']) {
-                return $this->res(false, '参数错误');
+            $data = $request->post('data/a', []);
+            $tableName = $request->post('tableName');
+            if (!$tableName || !$data || !$data['selectVal']) {
+                $this->error('参数错误');
             }
-            if ($data['selectVal'] == '后台') {
-                $dir = 'admin';
-            } elseif ($data['selectVal'] == '前台') {
-                $dir = 'app';
-            } else {
-                return $this->res(false, '参数错误');
-            }
-            $controller_name = $request->post('controllerName');
-            if (!$controller_name) {
-                $controller_name = $table_name;
-            }
-            $controller_name = Loader::parseName($controller_name, 1);
-            $model_name = Loader::parseName($table_name, 1);
 
-            list($indexField, $index_field, $editField, $edit_field, $addField, $add_field, $searchField, $search_field, $autoType) = [[], [], [], [], [], [], [], [], []];
-            $addRule = '';
-            $editRule = '';
-            $orderField = '';
-            foreach ($data['pageData'] as $k => $v) {
-                if (in_array('查', $v['curd'])) {
-                    $indexField[] = "'{$v['name']}'";
-                    $index_field[$v['name']] = $v['label'];
+            $controllerName = $request->post('controllerName');
+            if (empty($controllerName)) {
+                $controllerName = $tableName;
+            }
+            $controllerName = Loader::parseName($controllerName, 1);
+            $modelName = Loader::parseName($tableName, 1);
+
+            $responseMessage = '';
+
+            //判断前台 or 后台
+            if ($data['selectVal'] == '前台') {
+                //前台
+                if (in_array('控制器', $data['fruit'])) {
+                    //生成控制器
+                    $controllerRes = $this->createAppController($data, $controllerName, $modelName);
+                    $responseMessage .= ($controllerRes === true ? "控制器生成成功\n" : "$controllerRes\n") . '</br>';
+                    //生成验证器
+                    $validateRes = $this->createAppValidate($data, $controllerName);
+                    $responseMessage .= ($validateRes === true ? "验证器生成成功，请根据业务逻辑进行配置\n" : "$validateRes\n") . '</br>';
                 }
-                if (in_array('改', $v['curd'])) {
-                    $editField[] = "'{$v['name']}'";
-                    $edit_field[$v['name']] = [
-                        'label' => $v['label'],
-                        'tpl' => $tpl['form'][$v['business']],
-                        'attr' => $v['require'] ? 'data-rule="required;"' : ''
-                    ];
-                    if ($v['require']) {
-                        $editRule .= "        '{$v['name']}|{$v['label']}' => 'require',\n";
-                    }
+            } elseif ($data['selectVal'] == '后台') {
+                //后台
+                //生成控制器
+                if (in_array('控制器', $data['fruit'])) {
+                    //生成控制器
+                    $controllerRes = $this->createAdminController($data, $controllerName, $modelName);
+                    $responseMessage .= ($controllerRes === true ? "控制器生成成功\n" : "$controllerRes\n") . '</br>';
                 }
-                if (in_array('增', $v['curd'])) {
-                    $addField[] = "'{$v['name']}'";
-                    $add_field[$v['name']] = [
-                        'label' => $v['label'],
-                        'tpl' => $tpl['form'][$v['business']],
-                        'attr' => $v['require'] ? 'data-rule="required;"' : ''
-                    ];
-                    if ($v['require']) {
-                        $addRule .= "        '{$v['name']}|{$v['label']}' => 'require',\n";
-                    }
+                //生成模板
+                if (in_array('模板', $data['fruit'])) {
+                    $indexRes = $this->createIndexView($data, $controllerName);
+                    $responseMessage .= ($indexRes === true ? "index视图生成成功\n" : "$indexRes\n") . '</br>';
+                    $addRes = $this->createAddView($data, $controllerName);
+                    $responseMessage .= ($addRes === true ? "add视图生成成功\n" : "$addRes\n") . '</br>';
+                    $editRes = $this->createEditView($data, $controllerName);
+                    $responseMessage .= ($editRes === true ? "edit视图生成成功\n" : "$editRes\n") . '</br>';
                 }
-                if ($v['search'] == true) {
-                    $searchField[] = "'{$v['name']}'";
-                    $search_field[$v['name']] = [
-                        'label' => $v['label'],
-                        'tpl' => empty($tpl['search'][$v['business']]) ? 'input' : $tpl['search'][$v['business']],
-                        'attr' => ''
-                    ];
-                }
-                if (!empty($v['autotype'])) {
-                    $autoType[$v['name']] = $v['autotype'];
-                }
-                if (!empty($v['sort'])) {
-                    $orderField .= "{$v['name']} {$v['sort']},";
+            } else {
+                $this->error('参数错误');
+            }
+            //生成模型
+            if (in_array('模型', $data['fruit'])) {
+                $modelRes = $this->createModel($data, $modelName);
+                $responseMessage .= ($modelRes === true ? "模型生成成功\n" : "$modelRes\n") . '</br>';
+            }
+            $this->success($responseMessage);
+        }
+    }
+
+    /**
+     * 生成前台控制器
+     * @param $data
+     * @param $modelName
+     * @param $controllerName
+     * @return bool|string
+     */
+    private function createAppController($data, $controllerName, $modelName)
+    {
+        $controllerPath = APP_PATH . "app/controller/";
+        if (file_exists($controllerPath . "{$controllerName}.php")) {
+            return '控制器已存在';
+        }
+
+        $baseController = Config::get('curd.front_base_controller');
+        if (empty($baseController)) {
+            $baseController = '\think\Controller';
+        }
+        $signController = Config::get('curd.front_sign_controller');
+        if (empty($signController)) {
+            $signController = $baseController;
+        }
+        if ($data['login'] == '否') {
+            $extends = 'extends ' . $baseController;
+        } else {
+            $extends = 'extends ' . $signController;
+        }
+
+        $order = '';
+
+        foreach ($data['pageData'] as $k => $v) {
+            if (!empty($v['sort'])) {
+                $order .= "{$v['name']} {$v['sort']},";
+            }
+        }
+
+        $code = <<<CODE
+<?php
+namespace app\app\controller;
+
+use Hxc\Curd\Traits\App\Common;
+use Hxc\Curd\Traits\App\Curd;
+
+class {$controllerName} {$extends}
+{
+    /**
+     * 增删改查封装在Curd内，如需修改复制到控制器即可
+     */
+    use Common,Curd;
+    
+    protected \$model = '{$modelName}';
+ 
+    protected \$validate = '{$controllerName}'; 
+ 
+    protected \$with = '';//关联关系
+    
+    protected \$cache = true;//是否开启缓存查询，开启后每次增加，修改，删除都会刷新缓存
+    
+    protected \$order = '{$order}'; //排序字段
+}
+CODE;
+        $this->createPath($controllerPath);
+        file_put_contents($controllerPath . "{$controllerName}.php", $code);
+        return true;
+    }
+
+    /**
+     * 创建目录
+     * @param $path
+     */
+    private function createPath($path)
+    {
+        if (file_exists($path)) {
+            return;
+        }
+        mkdir($path, 0777, true);
+        return;
+    }
+
+    /**
+     * 生成验证文件
+     * @param $data
+     * @param $controllerName
+     * @return bool|string
+     */
+    private function createAppValidate($data, $controllerName)
+    {
+        $validatePath = APP_PATH . "app/validate/{$controllerName}.php";
+        if (file_exists($validatePath)) {
+            return '验证器已存在';
+        }
+        $rule = '';
+        $scene = '';
+        foreach ($data['pageData'] as $k => $v) {
+            if ($v['require']) {
+                $rule .= "        '{$v['name']}|{$v['label']}' => 'require',\n";
+                $scene .= "'{$v['name']}',";
+            }
+        }
+        $code = <<<CODE
+<?php
+namespace app\app\\validate;
+
+use think\Validate;
+
+class {$controllerName} extends Validate
+{
+    protected \$rule = [
+        'id' => 'require'
+    ];
+
+    protected \$message = [
+        'id.require'  =>  'id不能为空',
+        {$rule}
+    ];
+
+    protected \$scene = [
+        'delete' => ['id'],//删
+        'update' => ['id',{$scene}],//改
+        'store' => [{$scene}],//增
+        'index' => [{$scene}],//查
+    ];
+}
+CODE;
+        $this->createPath(APP_PATH . "app/validate/");
+        file_put_contents($validatePath, $code);
+        return true;
+    }
+
+    /**
+     * 生成后台控制器
+     * @param $data
+     * @param $controllerName
+     * @param $modelName
+     * @return bool|string
+     */
+    private function createAdminController($data, $controllerName, $modelName)
+    {
+        $controllerPath = APP_PATH . "admin/controller/";
+        if (file_exists($controllerPath . "{$controllerName}.php")) {
+            return '控制器已存在';
+        }
+
+        $baseController = Config::get('curd.base_controller');
+        if (empty($baseController)) {
+            $baseController = '\think\Controller';
+        }
+        $editRule = '';
+        $addRule = '';
+        $indexField = [];
+        $editField = [];
+        $addField = [];
+        $searchField = [];
+        $orderField = [];
+        foreach ($data['pageData'] as $k => $v) {
+            if (in_array('查', $v['curd'])) {
+                $indexField[] = "'{$v['name']}'";
+            }
+            if (in_array('改', $v['curd'])) {
+                $editField[] = "'{$v['name']}'";
+                if ($v['require']) {
+                    $editRule .= "        '{$v['name']}|{$v['label']}' => 'require',\n";
                 }
             }
-            $orderField = rtrim($orderField, ',');
-            $indexField = implode(',', $indexField);
-            $editField = implode(',', $editField);
-            $addField = implode(',', $addField);
-            $searchField = implode(',', $searchField);
-            foreach ($data['fruit'] as $k => $v) {
-                if ($v == '控制器') {
-                    $controller_path = APP_PATH . "{$dir}/controller/";
-                    if (file_exists($controller_path . "{$controller_name}.php")) {
-                        $this->error('控制器已存在');
-                    }
-                    $controller_code = <<<CODE
-    protected \$modelName  = '{$model_name}';  //模型名,用于add和update方法
+            if (in_array('增', $v['curd'])) {
+                $addField[] = "'{$v['name']}'";
+                if ($v['require']) {
+                    $addRule .= "        '{$v['name']}|{$v['label']}' => 'require',\n";
+                }
+            }
+            if ($v['search'] == true) {
+                $searchField[] = "'{$v['name']}'";
+            }
+            if (!empty($v['autotype'])) {
+                $autoType[$v['name']] = $v['autotype'];
+            }
+            if (!empty($v['sort'])) {
+                $orderField[] = "{$v['name']} {$v['sort']}";
+            }
+        }
+        $indexField = implode(',', $indexField);
+        $editField = implode(',', $editField);
+        $addField = implode(',', $addField);
+        $searchField = implode(',', $searchField);
+        $orderField = implode(',', $orderField);
+        $code = <<<CODE
+<?php
+namespace app\admin\controller;
+
+use Hxc\Curd\Traits\Admin\Common;
+use Hxc\Curd\Traits\Admin\Curd;
+use Hxc\Curd\Traits\Admin\CurdInterface;
+
+class {$controllerName} extends {$baseController} implements curdInterface
+{
+    /**
+     * 特别说明
+     * Common中的文件不能直接修改！！！！
+     * 如果需要进行业务追加操作，请复制Common中的对应的钩子方法到此控制器中后在进行操作
+     * Happy Coding
+     **/
+    use Curd, Common;
+
+    protected \$modelName  = '{$modelName}';  //模型名
     protected \$indexField = [{$indexField}];  //查，字段名
     protected \$addField   = [{$addField}];    //增，字段名
     protected \$editField  = [{$editField}];   //改，字段名
@@ -230,197 +410,166 @@ class Generate extends Controller
         //'nickName|昵称'  => 'require|max:25'
 {$editRule}
     ];
-CODE;
-                    $controller_code = $this->getControllerCode($controller_name, $controller_code, $data, $model_name, $orderField);
-                    $this->createPath($controller_path);
-                    file_put_contents($controller_path . "{$controller_name}.php", $controller_code);
-                }
-                if ($v == '模型') {
-                    $model_path = APP_PATH . "common/model/";
-                    if (file_exists($model_path . "{$model_name}.php")) {
-                        $this->error('模型已存在');
-                    }
-                    $model_code = $this->getModelCode($model_name, $data, $autoType);
-                    $this->createPath($model_path);
-                    file_put_contents($model_path . "{$model_name}.php", $model_code);
-                }
-                if ($dir == 'admin' && $v == '视图') {
-                    $view_dir_name = Loader::parseName($controller_name);
-                    $view_dir = APP_PATH . "{$dir}/view/{$view_dir_name}/";
-                    if (is_dir($view_dir)) {
-                        $this->error('视图目录已存在');
-                    } else {
-                        $this->createPath($view_dir);
-                        file_put_contents($view_dir . 'index.html', $this->getIndexViewCode($index_field, $search_field));
-                        file_put_contents($view_dir . 'add.html', $this->getAddViewCode($add_field));
-                        file_put_contents($view_dir . 'edit.html', $this->getEditViewCode($edit_field));
-                    }
-                }
-                if ($dir == 'app') {//创建验证文件
-                    $validate_path = APP_PATH . "{$dir}/validate/{$controller_name}.php";
-                    $this->createPath(APP_PATH . "{$dir}/validate/");
-                    $validate_code = $this->getValidateCode($controller_name);
-                    file_put_contents($validate_path, $validate_code);
-                }
-            }
-            $this->success();
-        }
-    }
-
-    /**
-     * 获取控制器代码
-     * @param $controller_name
-     * @param $code
-     * @param $data
-     * @param $model_name
-     * @param $order
-     * @return string
-     */
-    protected function getControllerCode($controller_name, $code, $data, $model_name, $order)
-    {
-        if ($data['selectVal'] == '后台') {
-            $baseController = Config::get('curd.base_controller');
-            if (empty($baseController)) {
-                $baseController = '\think\Controller';
-            }
-            $namespace = 'namespace app\admin\controller;';
-            $extends = 'extends ' . $baseController . ' implements curdInterface';
-            $use = <<<USE
-use Hxc\Curd\Traits\Admin\Common;
-use Hxc\Curd\Traits\Admin\Curd;
-use Hxc\Curd\Traits\Admin\CurdInterface;
-USE;
-            $html = <<<HTML
-    /**
-     * 特别说明
-     * Common中的文件不能直接修改！！！！
-     * 如果需要进行业务追加操作，请复制Common中的对应的钩子方法到此控制器中后在进行操作
-     * Happy Coding
-     **/
-    use Curd, Common;
-
-{$code}
-HTML;
-        } else {//前台
-            $baseController = Config::get('curd.front_base_controller');
-            if (empty($baseController)) {
-                $baseController = '\think\Controller';
-            }
-            $signController = Config::get('curd.front_sign_controller');
-            if (empty($signController)) {
-                $signController = $baseController;
-            }
-            $namespace = 'namespace app\app\controller;';
-            if ($data['login'] == '否') {
-                $extends = 'extends ' . $baseController;
-            } else {
-                $extends = 'extends ' . $signController;
-            }
-
-            $html = $this->getAppControllerCode($controller_name, $model_name, $order);
-            $use = <<<USE
-use think\Controller;
-use think\Request;
-use Hxc\Curd\Traits\App\Common;
-use Hxc\Curd\Traits\App\Curd;
-USE;
-        }
-        return <<<CODE
-<?php
-{$namespace}
-
-{$use}
-
-class {$controller_name} {$extends}
-{
-{$html}
 }
 CODE;
+        $this->createPath($controllerPath);
+        file_put_contents($controllerPath . "{$controllerName}.php", $code);
+        return true;
     }
 
     /**
-     * 获取前台的控制器代码
-     * @param $controller_name
-     * @param $model_name
-     * @param $order
-     * @return string
-     */
-    protected function getAppControllerCode($controller_name, $model_name, $order)
-    {
-        return <<<HTML
-    /**
-    * 增删改查封装在Curd内，如需修改复制到控制器即可
-    */
-    use Common,Curd;
-    
-    protected \$model = '{$model_name}';
- 
-    protected \$validate = '{$controller_name}'; 
-   
- 
-    protected \$with = '';//关联关系
-    
-    protected \$cache = true;//是否开启缓存查询，开启后每次增加，修改，删除都会刷新缓存
-    
-    protected \$order = '{$order}'; //排序字段
-
-HTML;
-    }
-
-    private function createPath($path)
-    {
-        if (file_exists($path)) {
-            return;
-        }
-        mkdir($path, 0777, true);
-        return;
-    }
-
-    /**
-     * 获取模型代码
-     * @param $model_name
+     * 生成列表视图
      * @param $data
-     * @param $autoType
-     * @return string
+     * @param $controllerName
+     * @return bool|string
      */
-    public function getModelCode($model_name, $data, $autoType)
+    private function createIndexView($data, $controllerName)
     {
+        $viewDirName = Loader::parseName($controllerName);
+        $viewDir = APP_PATH . "admin/view/{$viewDirName}/";
+        if (is_dir($viewDir . 'index.html')) {
+            return 'index视图已存在';
+        }
+
+        $tableHeader = '';
+        $tableBody = '';
+        $searchHtml = '';
+        foreach ($data['pageData'] as $k => $v) {
+            if (in_array('查', $v['curd'])) {
+                $tableHeader .= "            <th nowrap=\"nowrap\">{$v['label']}</th>\n";
+                $tableBody .= "                <td nowrap=\"nowrap\">{\$vo.{$v['name']}}</td>\n";
+            }
+            if ($v['search'] == true) {
+                $searchHtml .= sprintf(empty($tpl['search'][$v['business']]) ? 'input' : $tpl['search'][$v['business']], $v['name'], $v['label']) . "\n";
+            }
+        }
+
+        $templatePath = Config::get('curd.index_template');
+        if (empty($templatePath)) {
+            $templatePath = __DIR__ . '/../Templates/index.html';
+        }
+        if (!file_exists($templatePath)) {
+            return '模板文件不存在:' . $templatePath;
+        }
+        $code = file_get_contents($templatePath);
+        $code = str_replace(['{{hxc_search_field}}', '{{hxc_table_header}}', '{{hxc_table_body}}'], [$searchHtml, $tableHeader, $tableBody], $code);
+        $this->createPath($viewDir);
+        file_put_contents($viewDir . 'index.html', $code);
+        return true;
+    }
+
+    /**
+     * 生成添加视图
+     * @param $data
+     * @param $controllerName
+     * @return bool|string
+     */
+    private function createAddView($data, $controllerName)
+    {
+        $viewDirName = Loader::parseName($controllerName);
+        $viewDir = APP_PATH . "admin/view/{$viewDirName}/";
+        if (is_dir($viewDir . 'add.html')) {
+            return 'add视图已存在';
+        }
+
+        $tpl = Config::get('curd');
+        $html = '';
+        foreach ($data['pageData'] as $k => $v) {
+            if (in_array('增', $v['curd'])) {
+                $html .= sprintf($tpl['form'][$v['business']], $v['name'], $v['label'], $v['name'], $v['require'] ? 'data-rule="required;"' : '') . "\n";
+            }
+        }
+        $templatePath = Config::get('curd.add_template');
+        if (empty($templatePath)) {
+            $templatePath = __DIR__ . '/../Templates/add.html';
+        }
+        if (!file_exists($templatePath)) {
+            return '模板文件不存在:' . $templatePath;
+        }
+        $code = file_get_contents($templatePath);
+        $code = str_replace('{{curd_form_group}}', $html, $code);
+        $this->createPath($viewDir);
+        file_put_contents($viewDir . 'add.html', $code);
+        return true;
+    }
+
+    /**
+     * 生成编辑视图
+     * @param $data
+     * @param $controllerName
+     * @return bool|string
+     */
+    private function createEditView($data, $controllerName)
+    {
+        $viewDirName = Loader::parseName($controllerName);
+        $viewDir = APP_PATH . "admin/view/{$viewDirName}/";
+        if (is_dir($viewDir . 'edit.html')) {
+            return 'edit视图已存在';
+        }
+
+        $html = '';
+        $tpl = Config::get('curd');
+
+        foreach ($data['pageData'] as $k => $v) {
+            if (in_array('改', $v['curd'])) {
+                $html .= sprintf($tpl['form'][$v['business']], $v['name'], $v['label'], $v['name'], $v['require'] ? 'data-rule="required;"' : '') . "\n";
+            }
+
+        }
+
+        $templatePath = Config::get('curd.edit_template');
+        if (empty($templatePath)) {
+            $templatePath = __DIR__ . '/../Templates/edit.html';
+        }
+        if (!file_exists($templatePath)) {
+            return '模板文件不存在:' . $templatePath;
+        }
+        $code = file_get_contents($templatePath);
+        $code = str_replace('{{curd_form_group}}', $html, $code);
+        $this->createPath($viewDir);
+        file_put_contents($viewDir . 'edit.html', $code);
+        return true;
+    }
+
+    /**
+     * 生成模型
+     * @param $data
+     * @param $modelName
+     * @return bool|string
+     */
+    private function createModel($data, $modelName)
+    {
+        $modelPath = APP_PATH . "common/model/";
+        if (file_exists($modelPath . "{$modelName}.php")) {
+            return '模型已存在';
+        }
         $mainCode = '';
         $use = "use think\Model;\nuse Hxc\Curd\Traits\Model\Cache;";
         $time_status = 'false';
-        $namespace = 'namespace app\common\model;';
-        if ($data['selectVal'] == '前台') {
-            if ($data['delete'] === '是') {
-                $use .= "use traits\model\SoftDelete;\n";
-                $mainCode = 'use SoftDelete;';
-            }
-            $time_status = ($data['time'] == '是' ? 'true' : 'false');
-        } else {
-            if (in_array('开启软删', $data['model'])) {
-                $use .= "use traits\model\SoftDelete;\n";
-                $mainCode .= "use SoftDelete;\n";
-            }
-
-            if (in_array('自动时间戳', $data['model'])) {
-                $time_status = 'true';
-            }
+        if (in_array('开启软删', $data['model'])) {
+            $use .= "use traits\model\SoftDelete;\n";
+            $mainCode .= "use SoftDelete;\n";
         }
 
-        if (!empty($autoType)) {
-            $mainCode .= "    protected \$type = [\n";
-            foreach ($autoType as $name => $type) {
-                $mainCode .= "        '$name' => '$type',\n";
-            }
-            $mainCode .= "    ];\n";
+        if (in_array('自动时间戳', $data['model'])) {
+            $time_status = 'true';
         }
 
-        return <<<CODE
+        $mainCode .= "    protected \$type = [\n";
+        foreach ($data['pageData'] as $k => $v) {
+            if (!empty($v['autotype'])) {
+                $mainCode .= "        '{$v['name']}' => '{$v['autotype']}',\n";
+            }
+        }
+        $mainCode .= "    ];\n";
+
+        $code = <<<CODE
 <?php
-{$namespace}
+namespace app\common\model;
 
 {$use}
 
-class {$model_name} extends Model
+class {$modelName} extends Model
 {
     use Cache;
     {$mainCode}
@@ -431,113 +580,10 @@ class {$model_name} extends Model
     protected \$updateTime = 'update_time';
 }
 CODE;
-    }
 
-    /**
-     * 获取列表视图代码
-     * @param $index_field
-     * @param $search_field
-     * @return string
-     */
-    public function getIndexViewCode($index_field, $search_field)
-    {
-        $tableHeader = '';
-        $tableBody = '';
-        $searchField = '';
-        foreach ($index_field as $k => $v) {
-            $tableHeader .= "            <th nowrap=\"nowrap\">{$v}</th>\n";
-            $tableBody .= "                <td nowrap=\"nowrap\">{\$vo.{$k}}</td>\n";
-        }
-        foreach ($search_field as $k => $v) {
-            $searchField .= sprintf($v['tpl'], $k, $v['label']) . "\n";
-        }
-
-        $templatePath = Config::get('curd.index_template');
-        if (empty($templatePath)) {
-            $templatePath = __DIR__ . '/../Templates/index.html';
-        }
-        if (!file_exists($templatePath)) {
-            $this->error('模板文件不存在:' . $templatePath);
-        }
-        $code = file_get_contents($templatePath);
-        return str_replace(['{{hxc_search_field}}', '{{hxc_table_header}}', '{{hxc_table_body}}'], [$searchField, $tableHeader, $tableBody], $code);
-    }
-
-    /**
-     * 获取添加视图代码
-     * @param $add_field
-     * @return string
-     */
-    public function getAddViewCode($add_field)
-    {
-        $html = '';
-        foreach ($add_field as $k => $v) {
-            $html .= sprintf($v['tpl'], $k, $v['label'], $k, $v['attr']) . "\n";
-        }
-        $templatePath = Config::get('curd.add_template');
-        if (empty($templatePath)) {
-            $templatePath = __DIR__ . '/../Templates/add.html';
-        }
-        if (!file_exists($templatePath)) {
-            $this->error('模板文件不存在:' . $templatePath);
-        }
-        $code = file_get_contents($templatePath);
-        return str_replace('{{curd_form_group}}', $html, $code);
-    }
-
-    /**
-     * 获取编辑视图代码
-     * @param $edit_field
-     * @return string
-     */
-    public function getEditViewCode($edit_field)
-    {
-        $html = '';
-        foreach ($edit_field as $k => $v) {
-            $html .= sprintf($v['tpl'], $k, $v['label'], $k, $v['attr']) . "\n";
-        }
-        $templatePath = Config::get('curd.edit_template');
-        if (empty($templatePath)) {
-            $templatePath = __DIR__ . '/../Templates/edit.html';
-        }
-        if (!file_exists($templatePath)) {
-            $this->error('模板文件不存在:' . $templatePath);
-        }
-        $code = file_get_contents($templatePath);
-        return str_replace('{{curd_form_group}}', $html, $code);
-    }
-
-    /**
-     * 生成验证文件
-     * @param $controller_name
-     * @return string
-     */
-    public function getValidateCode($controller_name)
-    {
-        return <<<CODE
-<?php
-namespace app\app\\validate;
-
-use think\Validate;
-
-class {$controller_name} extends Validate
-{
-    protected \$rule = [
-        'id' => 'require'
-    ];
-
-    protected \$message = [
-        'id.require'  =>  'id不能为空',
-    ];
-
-    protected \$scene = [
-        'delete' => ['id'],//删
-        'update' => ['id'],//改
-        'store' => [''],//增
-        'index' => [''],//查
-    ];
-}
-CODE;
+        $this->createPath($modelPath);
+        file_put_contents($modelPath . "{$modelName}.php", $code);
+        return true;
     }
 
     /**
