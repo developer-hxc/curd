@@ -411,6 +411,7 @@ class {$controllerName} extends {$baseController} implements curdInterface
      **/
     use Curd, Common;
 
+    protected \$cache = true; //是否使用缓存
     protected \$modelName  = '{$modelName}';  //模型名
     protected \$indexField = [{$indexField}];  //查，字段名
     protected \$addField   = [{$addField}];    //增，字段名

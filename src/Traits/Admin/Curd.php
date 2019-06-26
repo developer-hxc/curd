@@ -23,6 +23,7 @@ use think\Validate;
  * @property $searchField
  * @property $pageLimit
  * @property $orderField
+ * @property bool $cache
  * @property array $indexField
  * @property array $addField
  * @property array $editField
@@ -186,6 +187,9 @@ trait Curd
             $model = model($this->modelName)->$relationSearch()->hasWhere([], null);
         } else {
             $model = model($this->modelName);
+        }
+        if ($this->cache) {
+            $model->cache(true, 0, $this->modelName . '_cache_data');
         }
         return $model->field($field)->where($where);
     }
