@@ -81,6 +81,15 @@
                 </checkbox-group>
             </div>
             <div style="margin-bottom: 20px" v-if="create.selectVal == '前台'">
+                <checkbox-group v-model="create.allow">
+                    允许的操作：
+                    <Checkbox label="get"></Checkbox>
+                    <Checkbox label="post"></Checkbox>
+                    <Checkbox label="put"></Checkbox>
+                    <Checkbox label="delete"></Checkbox>
+                </checkbox-group>
+            </div>
+            <div style="margin-bottom: 20px" v-if="create.selectVal == '前台'">
                 登录访问：
                 <radio-group v-model="create.login" type="button">
                     <Radio label="是"></Radio>
@@ -96,6 +105,7 @@
                         <Checkbox label="增"></Checkbox>
                         <Checkbox label="改"></Checkbox>
                         <Checkbox label="查"></Checkbox>
+                        <Checkbox label="详情" v-if="create.selectVal == '前台'"></Checkbox>
                     </checkbox-group>
                 </template>
                 <template slot-scope="{ row, index }" slot="search">
@@ -191,6 +201,7 @@
                     delete: '否',
                     time: '否',
                     login: '是',
+                    allow: []
                 },
                 controllerName: '',//控制器名称
                 tableName: '',//数据表名
@@ -231,15 +242,15 @@
                     },
                 ];
                 if (this.titleStatus == 1) {
-                    data.push( {
+                    data.push({
                         title: '名称',
                         slot: 'showName',
+                    }, {
+                        title: '操作',
+                        slot: 'curd',
                     });
                     if (this.create.selectVal == '后台') {
-                        data.push({
-                                title: '操作',
-                                slot: 'curd',
-                            },
+                        data.push(
                             {
                                 title: '检索',
                                 slot: 'search',
@@ -359,13 +370,13 @@
                                 }
                                 //操作
                                 if (subItem.name == 'create_time') {
-                                    subItem.curd = ['查'];
+                                    subItem.curd = ['查', '详情'];
                                 } else if (subItem.name == 'update_time' || subItem.name == 'delete_time') {
                                     subItem.curd = [];
                                 } else if (subItem.name == 'id') {
-                                    subItem.curd = ['查'];
+                                    subItem.curd = ['查', '详情'];
                                 } else {
-                                    subItem.curd = ['增', '改', '查'];
+                                    subItem.curd = ['增', '改', '查', '详情'];
                                 }
                                 //业务类型
                                 if (subItem.name == 'create_time' || subItem.name == 'update_time' || subItem.name == 'delete_time') {
@@ -415,6 +426,7 @@
                 //当选择框发生变化
                 this.create.fruit = ['控制器', '模型', '视图'];
                 this.create.model = [];
+                this.create.allow = ['get', 'post', 'put', 'delete'];
                 this.buttonDisabled = false;
                 this.getTableFieldData(table)
             },

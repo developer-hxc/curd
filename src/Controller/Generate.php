@@ -211,13 +211,39 @@ class Generate extends Controller
             $extends = 'extends ' . $signController;
         }
 
-        $order = '';
-
+        $indexField = [];
+        $editField = [];
+        $addField = [];
+        $orderField = [];
+        $detailField = [];
         foreach ($data['pageData'] as $k => $v) {
+            if (in_array('列表', $v['curd'])) {
+                $indexField[] = "'{$v['name']}'";
+            }
+            if (in_array('详情', $v['curd'])) {
+                $detailField[] = "'{$v['name']}'";
+            }
+            if (in_array('改', $v['curd'])) {
+                $editField[] = "'{$v['name']}'";
+            }
+            if (in_array('增', $v['curd'])) {
+                $addField[] = "'{$v['name']}'";
+            }
             if (!empty($v['sort'])) {
-                $order .= "{$v['name']} {$v['sort']},";
+                $orderField[] = "{$v['name']} {$v['sort']}";
             }
         }
+        $indexField = implode(',', $indexField);
+        $detailField = implode(',', $detailField);
+        $editField = implode(',', $editField);
+        $addField = implode(',', $addField);
+        $orderField = implode(',', $orderField);
+
+        $allow = [];
+        foreach ($data['allow'] as $c => $v) {
+            $allow[] = "'$v'";
+        }
+        $allow = implode(',', $allow);
 
         $code = <<<CODE
 <?php
@@ -233,15 +259,17 @@ class {$controllerName} {$extends}
      */
     use Common,Curd;
     
+    protected \$limit = null; //每页显示的数量
     protected \$model = '{$modelName}';
- 
-    protected \$validate = '{$controllerName}'; 
- 
+    protected \$validate = '{$controllerName}';
+    protected \$allow = [{$allow}]; //允许的操作，必须为小写，可选值为get\post\put\delete 
+    protected \$indexField = [{$indexField}];  //查，字段名
+    protected \$detailField = [{$detailField}];  //查，字段名
+    protected \$addField   = [{$addField}];    //增，字段名
+    protected \$editField  = [{$editField}];   //改，字段名
     protected \$with = '';//关联关系
-    
-    protected \$cache = true;//是否开启缓存查询，开启后每次增加，修改，删除都会刷新缓存
-    
-    protected \$order = '{$order}'; //排序字段
+    protected \$cache = true;//是否开启查询缓存
+    protected \$order = '{$orderField}'; //排序字段
 }
 CODE;
         $this->createPath($controllerPath);
@@ -355,9 +383,6 @@ CODE;
             }
             if ($v['search'] == true) {
                 $searchField[] = "'{$v['name']}'";
-            }
-            if (!empty($v['autotype'])) {
-                $autoType[$v['name']] = $v['autotype'];
             }
             if (!empty($v['sort'])) {
                 $orderField[] = "{$v['name']} {$v['sort']}";

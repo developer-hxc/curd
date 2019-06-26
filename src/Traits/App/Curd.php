@@ -13,17 +13,17 @@ use think\response\Json;
  * @property string $with
  * @property string $cache
  * @property string $order
+ * @property array $allow
+ * @property array $indexField
+ * @property array $detailField
+ * @property array $addField
+ * @property array $editField
+ * @property int|null $limit
  * @method array|string|true validate($data, $validate, $message = [], $batch = false, $callback = null)
  * @mixin Common
  */
 trait Curd
 {
-    /**
-     * 每页显示的数量
-     * @var int
-     */
-    protected $limit = null;
-
     /**
      * @param Request $request
      * @return Json|void
@@ -40,16 +40,24 @@ trait Curd
          */
         switch ($request->method()) {
             case 'GET':
-                return $this->get($request);
+                if (in_array('get', $this->allow)) {
+                    return $this->get($request);
+                }
                 break;
             case 'POST':
-                return $this->post($request);
+                if (in_array('post', $this->allow)) {
+                    return $this->post($request);
+                }
                 break;
             case 'PUT':
-                return $this->put($request);
+                if (in_array('put', $this->allow)) {
+                    return $this->put($request);
+                }
                 break;
             case 'DELETE':
-                return $this->delete($request);
+                if (in_array('delete', $this->allow)) {
+                    return $this->delete($request);
+                }
                 break;
         }
     }
@@ -64,16 +72,21 @@ trait Curd
     {
         if ($request->isGet()) {
             $id = $request->param('id');
+            $pageSize = $request->param('pageSize');
+            if (empty($pageSize)) {
+                $pageSize = $this->limit;
+            }
             $sql = model($this->model)->with($this->with)->order($this->order);
             if ($this->cache) {
-                $sql = $sql->cache(true, 0, $this->model . 'cache_data');
+                $sql = $sql->cache(true, 0, $this->model . '_cache_data');
             }
             if ($id) {
-                $res = $sql->find($id);
-                $flag = $res;
+                $res = $sql->field($this->detailField)->find($id);
+                if (empty($res)) {
+                    $this->returnFail('数据不存在');
+                }
             } else {
-                $res = $sql->paginate($this->limit);
-                $flag = $res->toArray()['data'];
+                $res = $sql->field($this->indexField)->paginate($pageSize);
             }
             $this->returnSuccess($res);
         }
@@ -87,7 +100,7 @@ trait Curd
     protected function post(Request $request)
     {
         if ($request->isPost()) {
-            $params = $request->param();
+            $params = $request->only($this->addField);
             $params_status = $this->validate($params, "{$this->model}.store");
             if (true !== $params_status) {
                 // 验证失败 输出错误信息
@@ -106,7 +119,12 @@ trait Curd
     protected function put(Request $request)
     {
         if ($request->isPut()) {
-            $params = $request->param();
+            $id = $request->param('id');
+            if (!$id) {
+                $this->returnFail('参数有误，缺少id');
+            }
+            $params = $request->only($this->editField);
+            $params['id'] = $id;
             $params_status = $this->validate($params, "{$this->model}.update");
             if (true !== $params_status) {
                 // 验证失败 输出错误信息
