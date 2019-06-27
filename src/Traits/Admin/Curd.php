@@ -181,7 +181,6 @@ trait Curd
      */
     protected function getSql($where = [])
     {
-        $field = implode(',', $this->indexField);
         $relationSearch = Session::get('RelationSearch', $this->modelName);
         if (!empty($relationSearch)) {
             $model = model($this->modelName)->$relationSearch()->hasWhere([], null);
@@ -191,7 +190,7 @@ trait Curd
         if ($this->cache) {
             $model->cache(true, 0, $this->modelName . '_cache_data');
         }
-        return $model->field($field)->where($where);
+        return $model->field($this->indexField)->where($where);
     }
 
     /**

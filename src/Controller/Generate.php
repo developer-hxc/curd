@@ -466,7 +466,7 @@ CODE;
                 $tableBody .= "                <td nowrap=\"nowrap\">{\$vo.{$v['name']}}</td>\n";
             }
             if ($v['search'] == true) {
-                $searchHtml .= sprintf(empty($tpl['search'][$v['business']]) ? 'input' : $tpl['search'][$v['business']], $v['name'], $v['label']) . "\n";
+                $searchHtml .= sprintf(empty($tpl['search'][$v['business']]) ? $tpl['search']['text'] : $tpl['search'][$v['business']], $v['name'], $v['label']) . "\n";
             }
         }
 

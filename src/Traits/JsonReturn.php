@@ -1,7 +1,7 @@
 <?php
 
 
-namespace hxc\Curd\Traits;
+namespace Hxc\Curd\Traits;
 
 use think\Config;
 use think\exception\HttpResponseException;
