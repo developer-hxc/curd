@@ -78,11 +78,11 @@ trait Curd
                         $where[$v['field'] ?: $k] = $v['val'];
                         break;
                     case 'time_start':
-                        $where[$v['field'] ?: $k][] = ['>=', $v['val'] . ' 00:00:00'];
+                        $where[$v['field'] ?: $k][] = ['>= time', $v['val'] . ' 00:00:00'];
                         $condition[$k] = $v['val'];
                         break;
                     case 'time_end':
-                        $where[$v['field'] ?: $k][] = ['<=', $v['val'] . ' 23:59:59'];
+                        $where[$v['field'] ?: $k][] = ['<= time', $v['val'] . ' 23:59:59'];
                         $condition[$k] = $v['val'];
                         break;
                     default:

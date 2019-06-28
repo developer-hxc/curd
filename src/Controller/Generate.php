@@ -354,7 +354,7 @@ CODE;
             return '控制器已存在';
         }
 
-        $baseController = Config::get('curd.base_controller');
+        $baseController = Config::get('curd.back_base_controller');
         if (empty($baseController)) {
             $baseController = '\think\Controller';
         }
@@ -382,7 +382,15 @@ CODE;
                 }
             }
             if ($v['search'] == true) {
-                $searchField[] = "'{$v['name']}'";
+                switch ($v['business']) {
+                    case 'date':
+                    case 'datetime':
+                        $searchField[] = "['{$v['name']}Start'=>['{$v['name']}','time_start']]";
+                        $searchField[] = "['{$v['name']}End'=>['{$v['name']}','time_end']]";
+                        break;
+                    default:
+                        $searchField[] = "'{$v['name']}'";
+                }
             }
             if (!empty($v['sort'])) {
                 $orderField[] = "{$v['name']} {$v['sort']}";
@@ -453,7 +461,7 @@ CODE;
     {
         $viewDirName = Loader::parseName($controllerName);
         $viewDir = APP_PATH . "admin/view/{$viewDirName}/";
-        if (is_dir($viewDir . 'index.html')) {
+        if (file_exists($viewDir . 'index.html')) {
             return 'index视图已存在';
         }
 
@@ -499,7 +507,7 @@ CODE;
     {
         $viewDirName = Loader::parseName($controllerName);
         $viewDir = APP_PATH . "admin/view/{$viewDirName}/";
-        if (is_dir($viewDir . 'add.html')) {
+        if (file_exists($viewDir . 'add.html')) {
             return 'add视图已存在';
         }
 
@@ -542,7 +550,7 @@ CODE;
     {
         $viewDirName = Loader::parseName($controllerName);
         $viewDir = APP_PATH . "admin/view/{$viewDirName}/";
-        if (is_dir($viewDir . 'edit.html')) {
+        if (file_exists($viewDir . 'edit.html')) {
             return 'edit视图已存在';
         }
 
