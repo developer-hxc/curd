@@ -100,8 +100,9 @@ protected $edit_rule = [
 
     * 列表页
     ```
-   indexQuery($sql)   列表查询的sql语句，如果再列表查询上我们需要其他的操作，可以进行链式操作，如$sql->where(['id' => 1])
-   indexAssign($data) 列表页面输出到视图的数据，如果我们需要往视图中追加数据可以在此方法中实现，如$data['id'] = 1
+   indexQuery($sql)      //列表查询的sql语句，如果再列表查询上我们需要其他的操作，可以进行链式操作，如$sql->where(['id' => 1])
+   indexAssign($data)    //列表页面输出到视图的数据，如果我们需要往视图中追加数据可以在此方法中实现，如$data['id'] = 1
+   pageEach($item, $key) //分页查询后数据遍历处理，方便修改分页后的数据
    ```
    
     * 添加页
