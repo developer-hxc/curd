@@ -139,7 +139,7 @@ trait Curd
         }
         $condition = [];
         foreach ($params as $k => $v) {
-            if ($v) {
+            if ($v !== '') {
                 $data = isset($special[$k]) ? $special[$k] : $k;
                 $type = '';
                 if (is_array($data)) {

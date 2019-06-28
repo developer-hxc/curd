@@ -163,7 +163,7 @@ class Generate extends Controller
                     $responseMessage .= ($controllerRes === true ? "控制器生成成功\n" : "$controllerRes\n") . '</br>';
                 }
                 //生成模板
-                if (in_array('模板', $data['fruit'])) {
+                if (in_array('视图', $data['fruit'])) {
                     $indexRes = $this->createIndexView($data, $controllerName);
                     $responseMessage .= ($indexRes === true ? "index视图生成成功\n" : "$indexRes\n") . '</br>';
                     $addRes = $this->createAddView($data, $controllerName);
