@@ -460,13 +460,18 @@ CODE;
         $tableHeader = '';
         $tableBody = '';
         $searchHtml = '';
+        $tpl = Config::get('curd');
         foreach ($data['pageData'] as $k => $v) {
             if (in_array('查', $v['curd'])) {
                 $tableHeader .= "            <th nowrap=\"nowrap\">{$v['label']}</th>\n";
                 $tableBody .= "                <td nowrap=\"nowrap\">{\$vo.{$v['name']}}</td>\n";
             }
             if ($v['search'] == true) {
-                $searchHtml .= sprintf(empty($tpl['search'][$v['business']]) ? $tpl['search']['text'] : $tpl['search'][$v['business']], $v['name'], $v['label']) . "\n";
+                $tmpTpl = $tpl['search']['text'];
+                if (!empty($tpl['search'][$v['business']])) {
+                    $tmpTpl = $tpl['search'][$v['business']];
+                }
+                $searchHtml .= str_replace(['{{name}}', '{{label}}', '{{value}}'], [$v['name'], $v['label'], $v['name']], $tmpTpl) . "\n";
             }
         }
 
@@ -502,7 +507,15 @@ CODE;
         $html = '';
         foreach ($data['pageData'] as $k => $v) {
             if (in_array('增', $v['curd'])) {
-                $html .= sprintf($tpl['form'][$v['business']], $v['name'], $v['label'], $v['name'], $v['require'] ? 'data-rule="required;"' : '') . "\n";
+                $tmpTpl = '';
+                if (!empty($tpl['form'][$v['business']])) {
+                    $tmpTpl = $tpl['form'][$v['business']];
+                }
+                $attr = '';
+                if ($v['require']) {
+                    $attr = 'data-rule="required;"';
+                }
+                $html .= str_replace(['{{name}}', '{{label}}', '{{value}}', '{{attr}}'], [$v['name'], $v['label'], $v['name'], $attr], $tmpTpl) . "\n";
             }
         }
         $templatePath = Config::get('curd.add_template');
@@ -538,7 +551,15 @@ CODE;
 
         foreach ($data['pageData'] as $k => $v) {
             if (in_array('改', $v['curd'])) {
-                $html .= sprintf($tpl['form'][$v['business']], $v['name'], $v['label'], $v['name'], $v['require'] ? 'data-rule="required;"' : '') . "\n";
+                $tmpTpl = '';
+                if (!empty($tpl['form'][$v['business']])) {
+                    $tmpTpl = $tpl['form'][$v['business']];
+                }
+                $attr = '';
+                if ($v['require']) {
+                    $attr = 'data-rule="required;"';
+                }
+                $html .= str_replace(['{{name}}', '{{label}}', '{{value}}', '{{attr}}'], [$v['name'], $v['label'], $v['name'], $attr], $tmpTpl) . "\n";
             }
 
         }

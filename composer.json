@@ -13,6 +13,7 @@
     "require": {
         "php": ">=5.6.0",
         "ext-json": "*",
+        "ext-mbstring": "*",
         "topthink/framework": "5.0.*"
     },
     "autoload": {
