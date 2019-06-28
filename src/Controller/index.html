@@ -45,7 +45,7 @@
             </h3>
         </i-header>
         <i-content class="hxc-content" v-if="titleStatus==1">
-            <div class="hxc-table-wrap">*模型位于application/common/model目录，前后台通用。</div>
+            <alert closable>* 模型位于application/common/model目录，前后台通用。</alert>
             <div class="hxc-table-wrap">
                 <span>业务选择：</span>
                 <radio-group type="button" v-model="create.selectVal">
@@ -104,7 +104,7 @@
                     <checkbox-group v-model="create.pageData[index].curd">
                         <Checkbox label="增"></Checkbox>
                         <Checkbox label="改"></Checkbox>
-                        <Checkbox label="查"></Checkbox>
+                        <Checkbox :label="create.selectVal == '前台'?'列表':'查'"></Checkbox>
                         <Checkbox label="详情" v-if="create.selectVal == '前台'"></Checkbox>
                     </checkbox-group>
                 </template>
@@ -370,13 +370,13 @@
                                 }
                                 //操作
                                 if (subItem.name == 'create_time') {
-                                    subItem.curd = ['查', '详情'];
+                                    subItem.curd = ['查', '列表', '详情'];
                                 } else if (subItem.name == 'update_time' || subItem.name == 'delete_time') {
                                     subItem.curd = [];
                                 } else if (subItem.name == 'id') {
-                                    subItem.curd = ['查', '详情'];
+                                    subItem.curd = ['查', '列表', '详情'];
                                 } else {
-                                    subItem.curd = ['增', '改', '查', '详情'];
+                                    subItem.curd = ['增', '列表', '改', '查', '详情'];
                                 }
                                 //业务类型
                                 if (subItem.name == 'create_time' || subItem.name == 'update_time' || subItem.name == 'delete_time') {
@@ -553,12 +553,12 @@
                     }
                 }
                 if (new_val.indexOf('开启软删') >= 0 && old_val.indexOf('开启软删') < 0) {
-                    if (!createTips) {
+                    if (!deleteTips) {
                         this.$Notice.info({
                             title: '关于软删',
                             desc: '表中没有delete_time字段，如果执意开启，请自行设置'
                         });
-                    } else if (createTips.indexOf('int') < 0) {
+                    } else if (deleteTips.indexOf('int') < 0) {
                         this.$Notice.info({
                             title: '关于软删',
                             desc: '表中的delete_time字段不是数字类型，如果执意开启，请自行设置'

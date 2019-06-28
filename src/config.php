@@ -27,11 +27,11 @@ return [
      * {{name}}{{label}}{{value}}
      */
     'search' => [
-        'text' => '{include file=\"tpl/search\" results=\"params\" name=\"{{name}}\" label=\"{{label}}\" attr=\'\'/}',
+        'text' => '{include file="tpl/search" results="params" name="{{name}}" label="{{label}}" attr=\'\'/}',
         'number' => '{include file="tpl/integer" results="params" name="{{name}}" label="{{label}}" value="{{value}}" attr=\'\'/}',
         'select' => '{include file="tpl/select" results="params" name="{{name}}" label="{{label}}" value="{{value}}" list="hxc" attr=\'\'/}',
         'date' => '{include file="tpl/dateRange" results="params" name="{{name}}" label="{{label}}" value="{{value}}" attr=\'\'/}',
         'datetime' => '{include file="tpl/datetimeRange" results="params" name="{{name}}" label="{{label}}" value="{{value}}" attr=\'\'/}',
-        'textarea' => '{include file=\"tpl/search\" results=\"params\" name=\"{{name}}\" label=\"{{label}}\" value="{{value}}" attr=\'\'/}',
+        'textarea' => '{include file="tpl/search" results="params" name="{{name}}" label="{{label}}" value="{{value}}" attr=\'\'/}',
     ]
 ];

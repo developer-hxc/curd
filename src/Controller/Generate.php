@@ -263,10 +263,10 @@ class {$controllerName} {$extends}
     protected \$model = '{$modelName}';
     protected \$validate = '{$controllerName}';
     protected \$allow = [{$allow}]; //允许的操作，必须为小写，可选值为get\post\put\delete 
-    protected \$indexField = [{$indexField}];  //查，字段名
-    protected \$detailField = [{$detailField}];  //查，字段名
-    protected \$addField   = [{$addField}];    //增，字段名
-    protected \$editField  = [{$editField}];   //改，字段名
+    protected \$indexField = [{$indexField}];  //允许在列表页返回的字段名
+    protected \$detailField = [{$detailField}];  //允许在详情页返回的字段名
+    protected \$addField   = [{$addField}];    //增加时允许前端传入的字段名
+    protected \$editField  = [{$editField}];   //修改时允许前端传入的字段名
     protected \$with = '';//关联关系
     protected \$cache = true;//是否开启查询缓存
     protected \$order = '{$orderField}'; //排序字段
@@ -626,7 +626,7 @@ namespace app\common\model;
 
 class {$modelName} extends Model
 {
-    use Cache;
+    use Cache; //处理缓存，请勿修改或删除。
     {$mainCode}
     // 自动维护时间戳
     protected \$autoWriteTimestamp = {$time_status};
