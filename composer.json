@@ -2,6 +2,7 @@
     "name": "hxc/curd",
     "description": "TP5.1生成工具的CURD",
     "license": "MIT",
+    "type": "qt-extend",
     "authors": [
         {
             "name": "韩韩韩",
@@ -27,5 +28,10 @@
         "files": [
             "src/common.php"
         ]
+    },
+    "extra": {
+        "qt-config": {
+            "curd": "src/config.php"
+        }
     }
 }
