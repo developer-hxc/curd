@@ -48,7 +48,7 @@ class Hxc extends Command
             $output->writeln($this->convertString('向导所需system函数已被禁用，请根据项目需要自行执行以下代码：'));
             $output->writeln($this->convertString('支付功能：composer require hxc/qt-pay'));
             $output->writeln($this->convertString('短信功能：composer require hxc/qt-sms'));
-            $output->writeln($this->convertString('队列功能：composer require think-queue:~1.0'));
+            $output->writeln($this->convertString('队列功能：composer require topthink/think-queue:~1.0'));
         }
         $doc = '这是代码生成器所需文件。';
 
