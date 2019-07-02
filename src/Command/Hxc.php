@@ -39,7 +39,7 @@ class Hxc extends Command
             }
             $needQueue = $output->confirm($input, $this->convertString("项目中是否需要队列功能？"), false);
             if ($needQueue) {
-                system('composer require think-queue:~1.0');
+                system('composer require topthink/think-queue:~1.0');
                 $output->writeln('---------------------------------------');
                 $output->writeln($this->convertString('队列功能已引入，详细用法请查看文档'));
             }
