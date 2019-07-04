@@ -13,6 +13,8 @@ use think\Request;
 
 class Generate extends Controller
 {
+    protected $config = [];
+
     public function _initialize()
     {
         parent::_initialize();
@@ -20,6 +22,7 @@ class Generate extends Controller
             throw new HttpException(404, 'module not exists:Generate');
         }
         Config::set('default_return_type', 'json');
+        $this->config = include_once ROOT_PATH . '/env.php';
     }
 
     public function index()
@@ -460,8 +463,14 @@ CODE;
     private function createIndexView($data, $controllerName)
     {
         $viewDirName = Loader::parseName($controllerName);
-        $viewDir = APP_PATH . "admin/view/{$viewDirName}/";
-        if (file_exists($viewDir . 'index.html')) {
+        if (!empty($this->config['view_root'])) {
+            $viewDir = $this->config['view_root'] . "/{$viewDirName}/";
+            $viewPath = $viewDir . 'index.vue';
+        } else {
+            $viewDir = APP_PATH . "admin/view/{$viewDirName}/";
+            $viewPath = $viewDir . 'index.html';
+        }
+        if (file_exists($viewPath)) {
             return 'index视图已存在';
         }
 
@@ -493,7 +502,7 @@ CODE;
         $code = file_get_contents($templatePath);
         $code = str_replace(['{{hxc_search_field}}', '{{hxc_table_header}}', '{{hxc_table_body}}'], [$searchHtml, $tableHeader, $tableBody], $code);
         $this->createPath($viewDir);
-        file_put_contents($viewDir . 'index.html', $code);
+        file_put_contents($viewPath, $code);
         return true;
     }
 
@@ -506,8 +515,14 @@ CODE;
     private function createAddView($data, $controllerName)
     {
         $viewDirName = Loader::parseName($controllerName);
-        $viewDir = APP_PATH . "admin/view/{$viewDirName}/";
-        if (file_exists($viewDir . 'add.html')) {
+        if (!empty($this->config['view_root'])) {
+            $viewDir = $this->config['view_root'] . "/{$viewDirName}/";
+            $viewPath = $viewDir . 'add.vue';
+        } else {
+            $viewDir = APP_PATH . "admin/view/{$viewDirName}/";
+            $viewPath = $viewDir . 'add.html';
+        }
+        if (file_exists($viewPath)) {
             return 'add视图已存在';
         }
 
@@ -536,7 +551,7 @@ CODE;
         $code = file_get_contents($templatePath);
         $code = str_replace('{{curd_form_group}}', $html, $code);
         $this->createPath($viewDir);
-        file_put_contents($viewDir . 'add.html', $code);
+        file_put_contents($viewPath, $code);
         return true;
     }
 
@@ -549,8 +564,14 @@ CODE;
     private function createEditView($data, $controllerName)
     {
         $viewDirName = Loader::parseName($controllerName);
-        $viewDir = APP_PATH . "admin/view/{$viewDirName}/";
-        if (file_exists($viewDir . 'edit.html')) {
+        if (!empty($this->config['view_root'])) {
+            $viewDir = $this->config['view_root'] . "/{$viewDirName}/";
+            $viewPath = $viewDir . 'edit.vue';
+        } else {
+            $viewDir = APP_PATH . "admin/view/{$viewDirName}/";
+            $viewPath = $viewDir . 'edit.html';
+        }
+        if (file_exists($viewPath)) {
             return 'edit视图已存在';
         }
 
@@ -582,7 +603,7 @@ CODE;
         $code = file_get_contents($templatePath);
         $code = str_replace('{{curd_form_group}}', $html, $code);
         $this->createPath($viewDir);
-        file_put_contents($viewDir . 'edit.html', $code);
+        file_put_contents($viewPath, $code);
         return true;
     }
 

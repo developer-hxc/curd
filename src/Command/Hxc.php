@@ -67,5 +67,8 @@ class Hxc extends Command
         } else {
             copy(__DIR__ . '/../config.php', $targetPath . 'curd.php');
         }
+        if (!file_exists(APP_PATH . '/env.php')) {
+            file_put_contents(APP_PATH.'/env.php',"<?php\nreturn [\n    'view_root' => ''\n];");
+        }
     }
 }
