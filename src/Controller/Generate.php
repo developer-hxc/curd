@@ -509,7 +509,9 @@ CODE;
             return '模板文件不存在:' . $templatePath;
         }
         $code = file_get_contents($templatePath);
-        $code = str_replace(['{{hxc_search_field}}', '{{hxc_table_columns}}', '{{hxc_search_field}}','{{hxc_controller_name}}'], [$searchHtml, json_encode($tableColumns), json_encode($searchField),$viewDirName], $code);
+        $tableColumns = empty($tableColumns) ? '[]' : json_encode($tableColumns, JSON_UNESCAPED_UNICODE);
+        $searchField = empty($searchField) ? '{}' : json_encode($searchField, JSON_UNESCAPED_UNICODE);
+        $code = str_replace(['{{hxc_search_form}}', '{{hxc_table_columns}}', '{{hxc_search_field}}', '{{hxc_controller_name}}'], [$searchHtml, $tableColumns, $searchField, $viewDirName], $code);
         $this->createPath($viewDir);
         file_put_contents($viewPath, $code);
         return true;

@@ -1,7 +1,7 @@
 <template>
     <div>
         <Form :model="searchData">
-            {{hxc_search_field}}
+            {{hxc_search_form}}
         </Form>
         <Table :columns="tableColumns" :data="tableData.data" :loading="tableLoading">
             <template slot-scope="{ row }" slot="action">
@@ -28,9 +28,7 @@
     export default {
         data() {
             return {
-                tableColumns: [
-                    {{hxc_table_columns}}
-                ],
+                tableColumns:{{hxc_table_columns}},
                 tableData: {
                     total: 0,
                     per_page: 0,
