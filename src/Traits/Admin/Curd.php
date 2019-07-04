@@ -54,7 +54,7 @@ trait Curd
             }
         }
         $relationSearch = '';
-        $whereData = $this->search($request, $request->only($only_arr), $special, $relationSearch);
+        $whereData = $this->search($request->only($only_arr), $special, $relationSearch);
         foreach ($whereData as $k => $v) {
             if ($k != 'pageSize' && $k != 'RelationSearch') {
                 switch ($v['type']) {
@@ -99,7 +99,7 @@ trait Curd
      * @param $relationSearch
      * @return array
      */
-    public function search(Request $request, $params, $special, &$relationSearch)
+    public function search($params, $special, &$relationSearch)
     {
         $whereData = [];
         foreach ($params as $k => $v) {
