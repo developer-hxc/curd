@@ -474,14 +474,16 @@ CODE;
             return 'index视图已存在';
         }
 
-        $tableHeader = '';
-        $tableBody = '';
         $searchHtml = '';
+        $tableColumns = [];
+        $searchField = [];
         $tpl = Config::get('curd');
         foreach ($data['pageData'] as $k => $v) {
             if (in_array('查', $v['curd'])) {
-                $tableHeader .= "            <th nowrap=\"nowrap\">{$v['label']}</th>\n";
-                $tableBody .= "                <td nowrap=\"nowrap\">{\$vo.{$v['name']}}</td>\n";
+                $tableColumns[] = [
+                    'title' => $v['label'],
+                    'key' => $v['name']
+                ];
             }
             if ($v['search'] == true) {
                 $tmpTpl = $tpl['search']['text'];
@@ -489,8 +491,15 @@ CODE;
                     $tmpTpl = $tpl['search'][$v['business']];
                 }
                 $searchHtml .= str_replace(['{{name}}', '{{label}}', '{{value}}'], [$v['name'], $v['label'], $v['name']], $tmpTpl) . "\n";
+                $searchField[$v['name']] = '';
             }
         }
+        $tableColumns[] = [
+            'title' => '操作',
+            'slot' => 'action',
+            'width' => 150,
+            'align' => 'center'
+        ];
 
         $templatePath = Config::get('curd.index_template');
         if (empty($templatePath)) {
@@ -500,7 +509,7 @@ CODE;
             return '模板文件不存在:' . $templatePath;
         }
         $code = file_get_contents($templatePath);
-        $code = str_replace(['{{hxc_search_field}}', '{{hxc_table_header}}', '{{hxc_table_body}}'], [$searchHtml, $tableHeader, $tableBody], $code);
+        $code = str_replace(['{{hxc_search_field}}', '{{hxc_table_columns}}', '{{hxc_search_field}}','{{hxc_controller_name}}'], [$searchHtml, json_encode($tableColumns), json_encode($searchField),$viewDirName], $code);
         $this->createPath($viewDir);
         file_put_contents($viewPath, $code);
         return true;

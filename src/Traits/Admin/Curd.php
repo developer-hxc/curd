@@ -68,11 +68,7 @@ trait Curd
                         $where[$v['field'] ?: $k][] = ['<= time', $v['val'] . ' 23:59:59'];
                         break;
                     default:
-                        if ($v['condition'] == 1) {
-                            $where[$v['field'] ?: $k] = $v['val'];
-                        } else {
-                            $where[$v['field'] ?: $k] = ['like', "%{$v['val']}%"];
-                        }
+                        $where[$v['field'] ?: $k] = ['like', "%{$v['val']}%"];
                         break;
                 }
             }
@@ -121,10 +117,8 @@ trait Curd
                 } else {
                     $field = $k;
                 }
-                $condition = $request->post("{$k}Condition") == 1 ? 1 : 0;
                 $whereData[$k] = [
                     'val' => $v,
-                    'condition' => $condition,
                     'field' => $field,
                     'type' => $type
                 ];
