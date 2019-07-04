@@ -3,15 +3,16 @@
 namespace Hxc\Curd\Traits\Admin;
 
 use think\db\Query;
+use think\Model;
 
 interface CurdInterface
 {
     /**
      * 列表查询sql捕获
-     * @param Query $sql 当前查询sql语句
+     * @param Query|Model $sql 当前查询sql语句
      * @return Query
      */
-    public function indexQuery(Query $sql);
+    public function indexQuery($sql);
 
     /**
      * 输出到列表视图的数据捕获

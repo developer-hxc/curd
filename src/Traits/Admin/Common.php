@@ -11,10 +11,10 @@ trait Common
 
     /**
      * 列表查询sql捕获
-     * @param \think\db\Query $sql
+     * @param \think\db\Query|\think\Model $sql
      * @return \think\db\Query
      */
-    public function indexQuery(\think\db\Query $sql)
+    public function indexQuery($sql)
     {
         return $sql;
     }
