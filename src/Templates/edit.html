@@ -17,9 +17,11 @@
         };
         },
         created() {
-            this.$httpRequest("/admin/{{hxc_controller_name}}/edit", "get", this.formData).then(res => {
+            this.$httpRequest("/admin/{{hxc_controller_name}}/edit", "get", {
+                id: this.$route.query.id
+            }).then(res => {
                 if (res.code == 1) {
-                    this.formData=res.data;
+                    this.formData=res.data.data;
                 } else {
                     this.$Message.error(res.msg);
                 }

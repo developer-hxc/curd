@@ -189,7 +189,7 @@ class Generate extends Controller
                 $responseMessage .= ($modelRes === true ? "模型生成成功\n" : "$modelRes\n") . '</br>';
             }
             $response['message'] = $responseMessage;
-            $this->success($responseMessage);
+            $this->success($response);
         }
     }
 
