@@ -571,7 +571,7 @@ CODE;
             return '模板文件不存在:' . $templatePath;
         }
         $code = file_get_contents($templatePath);
-        $formField = empty($formField) ? '{}' : json_encode($formField);
+        $formField = empty($formField) ? '{}' : json_encode($formField,JSON_UNESCAPED_UNICODE);
         $code = str_replace(['{{curd_form_group}}', '{{curd_form_field}}', '{{hxc_controller_name}}'], [$html, $formField, $viewDirName], $code);
         $this->createPath($viewDir);
         file_put_contents($viewPath, $code);
@@ -627,6 +627,7 @@ CODE;
             return '模板文件不存在:' . $templatePath;
         }
         $code = file_get_contents($templatePath);
+        $formField = empty($formField) ? '{}' : json_encode($formField, JSON_UNESCAPED_UNICODE);
         $code = str_replace(['{{curd_form_group}}', '{{curd_form_field}}', '{{hxc_controller_name}}'], [$html, $formField, $viewDirName], $code);
         $this->createPath($viewDir);
         file_put_contents($viewPath, $code);
