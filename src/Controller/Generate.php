@@ -146,6 +146,8 @@ class Generate extends Controller
 
             $responseMessage = '';
 
+            $response = [];
+
             //判断前台 or 后台
             if ($data['selectVal'] == '前台') {
                 //前台
@@ -173,6 +175,10 @@ class Generate extends Controller
                     $responseMessage .= ($addRes === true ? "add视图生成成功\n" : "$addRes\n") . '</br>';
                     $editRes = $this->createEditView($data, $controllerName);
                     $responseMessage .= ($editRes === true ? "edit视图生成成功\n" : "$editRes\n") . '</br>';
+                    $dir = Loader::parseName($controllerName);
+                    $response['router'] = '<p>{title: \'【菜单名】\',routes: { path: \'/' . $dir . '\', name: \'' . $dir . '\', component: () => import(\'./views/' . $dir . '/index.vue\'), meta: { title: \'【菜单名】\' } },}</p>';
+                    $response['router'] .= '<p>{ path: \'/' . $dir . '/add\', name: \'' . $dir . 'Add\', component: () => import(\'./views/' . $dir . '/add.vue\')}</p>';
+                    $response['router'] .= '<p>{ path: \'/' . $dir . '/edit\', name: \'' . $dir . 'Edit\', component: () => import(\'./views/' . $dir . '/edit.vue\')}</p>';
                 }
             } else {
                 $this->error('参数错误');
@@ -182,6 +188,7 @@ class Generate extends Controller
                 $modelRes = $this->createModel($data, $modelName);
                 $responseMessage .= ($modelRes === true ? "模型生成成功\n" : "$modelRes\n") . '</br>';
             }
+            $response['message'] = $responseMessage;
             $this->success($responseMessage);
         }
     }
@@ -593,18 +600,21 @@ CODE;
 
         $html = '';
         $tpl = Config::get('curd');
-
+        $formField = [];
         foreach ($data['pageData'] as $k => $v) {
             if (in_array('改', $v['curd'])) {
                 $tmpTpl = '';
                 if (!empty($tpl['form'][$v['business']])) {
                     $tmpTpl = $tpl['form'][$v['business']];
                 }
-                $attr = '';
-                if ($v['require']) {
-                    $attr = 'data-rule="required;"';
+                $html .= str_replace(['{{name}}', '{{label}}'], [$v['name'], $v['label']], $tmpTpl) . "\n";
+                switch ($v['business']) {
+                    case 'uploadImage':
+                        $formField[$v['name']] = [];
+                        break;
+                    default:
+                        $formField[$v['name']] = '';
                 }
-                $html .= str_replace(['{{name}}', '{{label}}', '{{value}}', '{{attr}}'], [$v['name'], $v['label'], $v['name'], $attr], $tmpTpl) . "\n";
             }
 
         }
@@ -617,7 +627,7 @@ CODE;
             return '模板文件不存在:' . $templatePath;
         }
         $code = file_get_contents($templatePath);
-        $code = str_replace('{{curd_form_group}}', $html, $code);
+        $code = str_replace(['{{curd_form_group}}', '{{curd_form_field}}', '{{hxc_controller_name}}'], [$html, $formField, $viewDirName], $code);
         $this->createPath($viewDir);
         file_put_contents($viewPath, $code);
         return true;

@@ -151,6 +151,10 @@
                     </i-select>
                 </template>
             </i-table>
+            <Alert v-show="showRouterTips">
+                <template slot="desc">Content of prompt. Content of prompt. Content of prompt. Content of prompt.
+                </template>
+            </Alert>
             <i-button type="primary" long style="margin-top: 20px" size="large" :disabled="buttonDisabled"
                       @click.native="generate">生成代码
             </i-button>
@@ -212,7 +216,9 @@
                 cascaderData: [],
                 modelData: [],
                 mvmModeldata: [],
-                relationData: []
+                relationData: [],
+                showRouterTips: false,
+                routerTips: ''
             }
         },
         methods: {
@@ -444,8 +450,11 @@
                     res => {
                         this.$Notice.open({
                             title: '操作完成',
-                            desc: res.data.msg
+                            desc: res.data.msg.message
                         });
+                        if (typeof res.data.msg.router === 'string') {
+                            this.routerTips = res.data.msg.router;
+                        }
                         // this.$Message.info({
                         //     content: res.data.msg,
                         //     duration: 10,
