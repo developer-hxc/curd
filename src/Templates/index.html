@@ -4,7 +4,7 @@
             {{hxc_search_form}}
             <Row>
                 <Col span="12">
-                <Button icon="ios-add" to="/{{hxc_contoller_name}}/add">添加</Button>
+                <Button icon="ios-add" to="/{{hxc_controller_name}}/add">添加</Button>
                 </Col>
                 <Col span="12">
                 <div style="text-align:right">
@@ -13,7 +13,12 @@
                 </Col>
             </Row>
         </Form>
-        <Table :columns="tableColumns" :data="tableData.data" :loading="tableLoading">
+        <Table
+                :columns="tableColumns"
+                :data="tableData.data"
+                :loading="tableLoading"
+                style="margin-top:20px;"
+        >
             <template slot-scope="{ row }" slot="action">
                 <Button
                         type="primary"
@@ -24,15 +29,13 @@
                 <Button type="error" size="small" @click="remove(row.id)">删除</Button>
             </template>
         </Table>
-        <div style="text-align:right;margin-top:20px">
-            <Page
-                    style="text-align:right;margin-top:20px"
-                    :total="tableData.total"
-                    :page-size="tableData.per_page"
-                    show-total
-                    @on-change="getData"
-            />
-        </div>
+        <Page
+                style="text-align:right;margin-top:20px"
+                :total="tableData.total"
+                :page-size="tableData.per_page"
+                show-total
+                @on-change="getData"
+        />
     </div>
 </template>
 <script>

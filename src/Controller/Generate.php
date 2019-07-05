@@ -539,17 +539,21 @@ CODE;
 
         $tpl = Config::get('curd');
         $html = '';
+        $formField = [];
         foreach ($data['pageData'] as $k => $v) {
             if (in_array('增', $v['curd'])) {
                 $tmpTpl = '';
                 if (!empty($tpl['form'][$v['business']])) {
                     $tmpTpl = $tpl['form'][$v['business']];
                 }
-                $attr = '';
-                if ($v['require']) {
-                    $attr = 'data-rule="required;"';
+                $html .= str_replace(['{{name}}', '{{label}}'], [$v['name'], $v['label']], $tmpTpl) . "\n";
+                switch ($v['business']) {
+                    case 'uploadImage':
+                        $formField[$v['name']] = [];
+                        break;
+                    default:
+                        $formField[$v['name']] = '';
                 }
-                $html .= str_replace(['{{name}}', '{{label}}', '{{value}}', '{{attr}}'], [$v['name'], $v['label'], $v['name'], $attr], $tmpTpl) . "\n";
             }
         }
         $templatePath = Config::get('curd.add_template');
@@ -560,7 +564,8 @@ CODE;
             return '模板文件不存在:' . $templatePath;
         }
         $code = file_get_contents($templatePath);
-        $code = str_replace('{{curd_form_group}}', $html, $code);
+        $formField = empty($formField) ? '{}' : json_encode($formField);
+        $code = str_replace(['{{curd_form_group}}', '{{curd_form_field}}', '{{hxc_controller_name}}'], [$html, $formField, $viewDirName], $code);
         $this->createPath($viewDir);
         file_put_contents($viewPath, $code);
         return true;

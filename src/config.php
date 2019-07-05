@@ -13,25 +13,25 @@ return [
      * {{name}}{{label}}{{value}}{{attr}}
      */
     'form' => [
-        'text' => '{include file="tpl/input" results="data" name="{{name}}" label="{{label}}" value="{{value}}" attr=\'{{attr}}\'/}',
-        'number' => '{include file="tpl/integer" results="data" name="{{name}}" label="{{label}}" value="{{value}}" attr=\'{{attr}}\'/}',
-        'select' => '{include file="tpl/selectCol" results="data" name="{{name}}" label="{{label}}" value="{{value}}" list="hxc" attr=\'{{attr}}\'/}',
-        'uploadImage' => '{include file="tpl/singleImage" results="data" name="{{name}}" label="{{label}}" value="{{value}}" attr=\'{{attr}}\'/}',
-        'ueditor' => '{include file="tpl/ueditor" results="data" name="{{name}}" label="{{label}}" value="{{value}}" attr=\'{{attr}}\'/}',
-        'date' => '{include file="tpl/date" results="data" name="{{name}}" label="{{label}}" value="{{value}}" attr=\'{{attr}}\'/}',
-        'datetime' => '{include file="tpl/datetime" results="data" name="{{name}}" label="{{label}}" value="{{value}}" attr=\'{{attr}}\'/}',
-        'textarea' => '{include file="tpl/input" results="data" name="{{name}}" label="{{label}}" value="{{value}}" attr=\'{{attr}}\'/}',
+        'text' => '<FormItem label="{{label}}"><Input v-model="formData.{{name}}" /></FormItem>',
+        'number' => '<FormItem label="{{label}}"><Input v-model="formData.{{name}}" type="number" /></FormItem>',
+        'select'=>'<FormItem label="{{label}}"><Select v-model="formData.{{name}}"><Option v-for="item in {{name}}List" :value="item.value" :key="item.value">{{ item.label }}</Option></Select></FormItem>',
+        'uploadImage' => '<FormItem label="{{label}}"><singleImage :uploadAction="path+\'/admin/tool/uploadImage\'" v-model="formData.{{name}}" :maxFileCounts="3"/></FormItem>',
+        'ueditor' => '<FormItem label="{{label}}"><editor ref="editor" v-model="formData.{{name}}" :uploadImgServer="path+\'/admin/tool/editorUpload\'" /></FormItem>',
+        'date' => '<FormItem label="{{label}}"><DatePicker v-model="formData.{{name}}" type="date"></DatePicker></FormItem>',
+        'datetime' => '<FormItem label="{{label}}"><DatePicker v-model="formData.{{name}}" type="datetime"></DatePicker></FormItem>',
+        'textarea' => '<FormItem label="{{label}}"><Input v-model="formData.{{name}}" type="textarea"/></FormItem>',
     ],
     /**
      * 搜索字段模板，指定使用以下占位符
      * {{name}}{{label}}{{value}}
      */
     'search' => [
-        'text' => '{include file="tpl/search" results="params" name="{{name}}" label="{{label}}" attr=\'\'/}',
-        'number' => '{include file="tpl/integer" results="params" name="{{name}}" label="{{label}}" value="{{value}}" attr=\'\'/}',
-        'select' => '{include file="tpl/select" results="params" name="{{name}}" label="{{label}}" value="{{value}}" list="hxc" attr=\'\'/}',
-        'date' => '{include file="tpl/dateRange" results="params" name="{{name}}" label="{{label}}" value="{{value}}" attr=\'\'/}',
-        'datetime' => '{include file="tpl/datetimeRange" results="params" name="{{name}}" label="{{label}}" value="{{value}}" attr=\'\'/}',
-        'textarea' => '{include file="tpl/search" results="params" name="{{name}}" label="{{label}}" value="{{value}}" attr=\'\'/}',
+        'text' => '<FormItem label="{{label}}"><Input v-model="searchData.{{name}}" /></FormItem>',
+        'number' => '<FormItem label="{{label}}"><Input v-model="searchData.{{name}}" type="number" /></FormItem>',
+        'select' => '<FormItem label="{{label}}"><Select v-model="searchData.{{name}}" clearable><Option v-for="item in {{name}}List" :value="item.value" :key="item.value">{{ item.label }}</Option></Select></FormItem>',
+        'date'=>'<FormItem label="{{label}}"><DatePicker v-model="searchData.{{name}}" type="daterange"></DatePicker></FormItem>',
+        'datetime'=>'<FormItem label="{{label}}"><DatePicker v-model="searchData.{{name}}" type="datetimerange"></DatePicker></FormItem>',
+        'textarea' => '<FormItem label="{{label}}"><Input v-model="searchData.{{name}}" /></FormItem>',
     ]
 ];
