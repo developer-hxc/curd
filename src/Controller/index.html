@@ -74,6 +74,11 @@
                          style="width: auto"/>
             </div>
             <div style="margin-bottom: 20px">
+                展示名称：
+                <i-input v-model="showName" placeholder="展示名称"
+                         style="width: auto"/>
+            </div>
+            <div style="margin-bottom: 20px">
                 <checkbox-group v-model="create.model">
                     模型选项：
                     <Checkbox label="自动时间戳"></Checkbox>
@@ -208,6 +213,7 @@
                     allow: []
                 },
                 controllerName: '',//控制器名称
+                showName: '',
                 tableName: '',//数据表名
                 tableData: [],//数据表数据
                 buttonDisabled: true,//生成代码按钮
@@ -446,7 +452,8 @@
                 axios.post('/generate/generate', {
                     data: this.create,
                     tableName: this.tableName,
-                    controllerName: this.controllerName
+                    controllerName: this.controllerName,
+                    showName: this.showName
                 }).then(
                     res => {
                         this.$Notice.open({

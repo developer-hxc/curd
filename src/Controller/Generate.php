@@ -133,6 +133,7 @@ class Generate extends Controller
         if ($request->isPost()) {
             $data = $request->post('data/a', []);
             $tableName = $request->post('tableName');
+            $showName = $request->post('showName', '');
             if (!$tableName || !$data || !$data['selectVal']) {
                 $this->error('参数错误');
             }
@@ -176,9 +177,11 @@ class Generate extends Controller
                     $editRes = $this->createEditView($data, $controllerName);
                     $responseMessage .= ($editRes === true ? "edit视图生成成功\n" : "$editRes\n") . '</br>';
                     $dir = Loader::parseName($controllerName);
-                    $response['router'] = '<p>{title: \'【菜单名】\',routes: { path: \'/' . $dir . '\', name: \'' . $dir . '\', component: () => import(\'./views/' . $dir . '/index.vue\'), meta: { title: \'【菜单名】\' } },}</p>';
-                    $response['router'] .= '<p>{ path: \'/' . $dir . '/add\', name: \'' . $dir . 'Add\', component: () => import(\'./views/' . $dir . '/add.vue\')}</p>';
-                    $response['router'] .= '<p>{ path: \'/' . $dir . '/edit\', name: \'' . $dir . 'Edit\', component: () => import(\'./views/' . $dir . '/edit.vue\')}</p>';
+                    $this->createMeta($showName, $dir);
+                    $response['router'] = '<p>{title: \'' . $showName . '\',to: \'/' . $dir . '\'}</p>';
+//                    $response['router'] = '<p>{title: \'【菜单名】\',routes: { path: \'/' . $dir . '\', name: \'' . $dir . '\', component: () => import(\'./views/' . $dir . '/index.vue\'), meta: { title: \'【菜单名】\' } },}</p>';
+//                    $response['router'] .= '<p>{ path: \'/' . $dir . '/add\', name: \'' . $dir . 'Add\', component: () => import(\'./views/' . $dir . '/add.vue\')}</p>';
+//                    $response['router'] .= '<p>{ path: \'/' . $dir . '/edit\', name: \'' . $dir . 'Edit\', component: () => import(\'./views/' . $dir . '/edit.vue\')}</p>';
                 }
             } else {
                 $this->error('参数错误');
@@ -474,8 +477,7 @@ CODE;
             $viewDir = $this->config['view_root'] . "/{$viewDirName}/";
             $viewPath = $viewDir . 'index.vue';
         } else {
-            $viewDir = APP_PATH . "admin/view/{$viewDirName}/";
-            $viewPath = $viewDir . 'index.html';
+            return '配置错误';
         }
         if (file_exists($viewPath)) {
             return 'index视图已存在';
@@ -537,8 +539,7 @@ CODE;
             $viewDir = $this->config['view_root'] . "/{$viewDirName}/";
             $viewPath = $viewDir . 'add.vue';
         } else {
-            $viewDir = APP_PATH . "admin/view/{$viewDirName}/";
-            $viewPath = $viewDir . 'add.html';
+            return '配置错误';
         }
         if (file_exists($viewPath)) {
             return 'add视图已存在';
@@ -571,7 +572,7 @@ CODE;
             return '模板文件不存在:' . $templatePath;
         }
         $code = file_get_contents($templatePath);
-        $formField = empty($formField) ? '{}' : json_encode($formField,JSON_UNESCAPED_UNICODE);
+        $formField = empty($formField) ? '{}' : json_encode($formField, JSON_UNESCAPED_UNICODE);
         $code = str_replace(['{{curd_form_group}}', '{{curd_form_field}}', '{{hxc_controller_name}}'], [$html, $formField, $viewDirName], $code);
         $this->createPath($viewDir);
         file_put_contents($viewPath, $code);
@@ -591,8 +592,7 @@ CODE;
             $viewDir = $this->config['view_root'] . "/{$viewDirName}/";
             $viewPath = $viewDir . 'edit.vue';
         } else {
-            $viewDir = APP_PATH . "admin/view/{$viewDirName}/";
-            $viewPath = $viewDir . 'edit.html';
+            return '配置错误';
         }
         if (file_exists($viewPath)) {
             return 'edit视图已存在';
@@ -631,6 +631,40 @@ CODE;
         $code = str_replace(['{{curd_form_group}}', '{{curd_form_field}}', '{{hxc_controller_name}}'], [$html, $formField, $viewDirName], $code);
         $this->createPath($viewDir);
         file_put_contents($viewPath, $code);
+        return true;
+    }
+
+    private function createMeta($showName, $dir)
+    {
+        if (!empty($this->config['view_root'])) {
+            $viewDir = $this->config['view_root'] . "/{$dir}/";
+            $viewPath = $viewDir . 'meta.yml';
+        } else {
+            return '配置错误';
+        }
+        if (file_exists($viewPath)) {
+            return 'meta.yml文件已存在';
+        }
+        $meta = <<<META
+index:
+  breadcrumb: 
+    - name: $showName
+  title: $showName
+add:
+  breadcrumb: 
+    - name: $showName
+      to: /$dir
+    - name: 添加
+  title: 添加$showName
+edit:
+  breadcrumb: 
+    - name: $showName
+      to: /$dir
+    - name: 修改
+  title: 修改$showName
+META;
+        $this->createPath($viewDir);
+        file_put_contents($viewPath, $meta);
         return true;
     }
 
