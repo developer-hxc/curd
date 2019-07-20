@@ -159,6 +159,7 @@ class Generate extends Controller
                     //生成验证器
                     $validateRes = $this->createAppValidate($data, $controllerName);
                     $responseMessage .= ($validateRes === true ? "验证器生成成功，请根据业务逻辑进行配置\n" : "$validateRes\n") . '</br>';
+                    $this->createDocument($data, $controllerName, $showName);
                 }
             } elseif ($data['selectVal'] == '后台') {
                 //后台
@@ -351,6 +352,83 @@ CODE;
         $this->createPath(APP_PATH . "app/validate/");
         file_put_contents($validatePath, $code);
         return true;
+    }
+
+    private function createDocument($data, $controllerName, $showName)
+    {
+        $path = '/app/' . Loader::parseName($controllerName) . '/index';
+
+        $indexField = [
+            'type' => 'object'
+        ];
+        $editField = [];
+        $addField = [];
+        foreach ($data['pageData'] as $k => $v) {
+            if (in_array('列表', $v['curd'])) {
+                $indexField['properties'][$v['name']] = [
+                    'type' => 'string',
+                    'description' => $v['label']
+                ];
+                if (in_array($v['autotype'], ['json', 'array', 'object', 'serialize'])) {
+                    $indexField['properties'][$v['name']]['type'] = 'array';
+                    $indexField['properties'][$v['name']]['items']['type'] = 'string';
+                }
+            }
+            if (in_array('改', $v['curd'])) {
+                $editField[] = "'{$v['name']}'";
+            }
+            if (in_array('增', $v['curd'])) {
+                $addField[] = "'{$v['name']}'";
+            }
+        }
+
+        $json = [
+            'swagger' => '2.0',
+            'tags' => [
+                [
+                    'name' => '临时分类',
+                    'description' => '公共分类',
+                ]
+            ],
+            'paths' => [
+                $path => [
+                    'get' => [
+                        'tags' => ['临时分类'],
+                        'summary' => $showName . '列表',
+                        'description' => '',
+                        'parameters' => [
+                            [
+                                'name' => 'page',
+                                'in' => 'query',
+                                'required' => false,
+                                'description' => '页码',
+                                'type' => 'string'
+                            ]
+                        ],
+                        'responses' => [
+                            '200' => [
+                                'description' => 'successful operation',
+                                'schema' => [
+                                    '$schema' => 'http://json-schema.org/draft-04/schema#',
+                                    'type' => 'object',
+                                    'properties' => [
+                                        'code' => [
+                                            'type' => 'number',
+                                            'description' => '0--失败 1--成功'
+                                        ],
+                                        'status' => [
+                                            'type' => 'string',
+                                            'description' => '状态值'
+                                        ],
+                                        'data' => $indexField
+                                    ]
+                                ]
+                            ]
+                        ]
+                    ]
+                ]
+            ]
+        ];
     }
 
     /**

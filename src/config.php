@@ -33,5 +33,9 @@ return [
         'date'=>'<FormItem label="{{label}}"><DatePicker v-model="searchData.{{name}}" type="daterange"></DatePicker></FormItem>',
         'datetime'=>'<FormItem label="{{label}}"><DatePicker v-model="searchData.{{name}}" type="datetimerange"></DatePicker></FormItem>',
         'textarea' => '<FormItem label="{{label}}"><Input v-model="searchData.{{name}}" /></FormItem>',
+    ],
+    'yapi'=>[
+        'domain'=>'',//yapi域名
+        'token'=>'',//项目token,
     ]
 ];
