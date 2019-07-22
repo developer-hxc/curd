@@ -36,10 +36,9 @@ trait JsonReturn
         $data = [
             'code' => $code,
             'status' => 'success',
+            'data' => $res,
         ];
-        if ($res) {
-            $data['data'] = $res;
-        }
+        $data['data'] = $res;
         throw new HttpResponseException(\json($data));
     }
 

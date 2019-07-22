@@ -3,6 +3,7 @@
 namespace Hxc\curd\Controller;
 
 
+use GuzzleHttp\Client;
 use think\Config;
 use think\Controller;
 use think\Db;
@@ -159,7 +160,8 @@ class Generate extends Controller
                     //生成验证器
                     $validateRes = $this->createAppValidate($data, $controllerName);
                     $responseMessage .= ($validateRes === true ? "验证器生成成功，请根据业务逻辑进行配置\n" : "$validateRes\n") . '</br>';
-                    $this->createDocument($data, $controllerName, $showName);
+                    $documentRes = $this->createDocument($data, $controllerName, $showName, $tableName);
+                    $responseMessage .= '文档生成结果：' . $documentRes . "\n";
                 }
             } elseif ($data['selectVal'] == '后台') {
                 //后台
@@ -354,32 +356,334 @@ CODE;
         return true;
     }
 
-    private function createDocument($data, $controllerName, $showName)
+    private function createDocument($data, $controllerName, $showName, $tableName)
     {
+        if (empty($this->config['api_token']) || empty($this->config['api_uri'])) {
+            return '请先完善配置';
+        }
         $path = '/app/' . Loader::parseName($controllerName) . '/index';
+        $detailPath = $path . '?id={id}';
 
-        $indexField = [
-            'type' => 'object'
+        $paths = [];
+
+        $index = [
+            'type' => 'object',
+            'description' => ''
         ];
-        $editField = [];
-        $addField = [];
+        $detail = [
+            'type' => 'object',
+            'description' => ''
+        ];
+        $postParameters = [];
+        $postData = [
+            'type' => 'object',
+            'description' => '插入的数据主键'
+        ];
+        $putParameters = [];
+        $deleteParameters = [];
+        $tablePk = Db::name($tableName)->getPk();
+        $allowGet = in_array('get', $data['allow']);
+        $allowPost = in_array('post', $data['allow']);
+        $allowPut = in_array('put', $data['allow']);
+        $allowDelete = in_array('delete', $data['allow']);
+        $hasPk = [];
+
         foreach ($data['pageData'] as $k => $v) {
-            if (in_array('列表', $v['curd'])) {
-                $indexField['properties'][$v['name']] = [
-                    'type' => 'string',
-                    'description' => $v['label']
-                ];
-                if (in_array($v['autotype'], ['json', 'array', 'object', 'serialize'])) {
-                    $indexField['properties'][$v['name']]['type'] = 'array';
-                    $indexField['properties'][$v['name']]['items']['type'] = 'string';
+            if ($allowGet) {
+                if (in_array('列表', $v['curd'])) {
+                    $index['properties'][$v['name']] = [
+                        'type' => 'string',
+                        'description' => $v['label']
+                    ];
+                    if (in_array($v['autotype'], ['json', 'array', 'object', 'serialize'])) {
+                        $index['properties'][$v['name']]['type'] = 'array';
+                        $index['properties'][$v['name']]['items']['type'] = 'string';
+                    }
+                    $index['required'][] = $v['name'];
+                }
+                if (in_array('详情', $v['curd'])) {
+                    $detail['properties'][$v['name']] = [
+                        'type' => 'string',
+                        'description' => $v['label']
+                    ];
+                    if (in_array($v['autotype'], ['json', 'array', 'object', 'serialize'])) {
+                        $detail['properties'][$v['name']]['type'] = 'array';
+                        $detail['properties'][$v['name']]['items']['type'] = 'string';
+                    }
+                    $detail['required'][] = $v['name'];
                 }
             }
-            if (in_array('改', $v['curd'])) {
-                $editField[] = "'{$v['name']}'";
+            if ($allowPut) {
+                if (in_array('改', $v['curd'])) {
+                    $putParameters[] = [
+                        'name' => $v['name'] . (in_array($v['autotype'], ['json', 'array', 'object', 'serialize']) ? '[]' : ''),
+                        'in' => 'formData',
+                        'required' => $v['require'],
+                        'description' => $v['label'],
+                        'type' => 'string'
+                    ];
+                    if ((is_array($tablePk) && in_array($v['name'], $tablePk)) || $v['name'] == $tablePk) {
+                        $hasPk[$v['name']] = true;
+                    }
+                }
             }
-            if (in_array('增', $v['curd'])) {
-                $addField[] = "'{$v['name']}'";
+            if ($allowPost) {
+                if (in_array('增', $v['curd'])) {
+                    $postParameters[] = [
+                        'name' => $v['name'] . (in_array($v['autotype'], ['json', 'array', 'object', 'serialize']) ? '[]' : ''),
+                        'in' => 'formData',
+                        'required' => $v['require'],
+                        'description' => $v['label'],
+                        'type' => 'string'
+                    ];
+                }
             }
+        }
+        if ($allowGet) {//列表、详情
+            $paths[$path]['get'] = [
+                'tags' => ['临时分类'],
+                'summary' => $showName . '列表',
+                'description' => '',
+                'parameters' => [
+                    [
+                        'name' => 'page',
+                        'in' => 'query',
+                        'required' => false,
+                        'description' => '页码',
+                        'type' => 'string'
+                    ]
+                ],
+                'responses' => [
+                    '200' => [
+                        'description' => 'successful operation',
+                        'schema' => [
+                            '$schema' => 'http://json-schema.org/draft-04/schema#',
+                            'type' => 'object',
+                            'properties' => [
+                                'code' => [
+                                    'type' => 'number',
+                                    'description' => '0--失败 1--成功'
+                                ],
+                                'status' => [
+                                    'type' => 'string',
+                                    'description' => '状态值'
+                                ],
+                                'data' => [
+                                    'type' => 'object',
+                                    'description' => '',
+                                    'properties' => [
+                                        "total" => [
+                                            "type" => "number",
+                                            "description" => "总条数"
+                                        ],
+                                        "per_page" => [
+                                            "type" => "number",
+                                            "description" => "每页条数"
+                                        ],
+                                        "current_page" => [
+                                            "type" => "number",
+                                            "description" => "当前页"
+                                        ],
+                                        "last_page" => [
+                                            "type" => "number",
+                                            "description" => "最大页"
+                                        ],
+                                        'data' => [
+                                            'type' => 'array',
+                                            'items' => $index
+                                        ],
+                                    ],
+                                    "required" => ["total", "per_page", "current_page", "last_page", "data"]
+                                ]
+                            ],
+                            "required" => ["code", "status", "data"]
+                        ]
+                    ]
+                ]
+            ];
+            $paths[$detailPath]['get'] = [
+                'tags' => ['临时分类'],
+                'summary' => $showName . '详情',
+                'description' => '请将路径中的{id}替换为要查看的数据id',
+                'responses' => [
+                    '200' => [
+                        'description' => 'successful operation',
+                        'schema' => [
+                            '$schema' => 'http://json-schema.org/draft-04/schema#',
+                            'type' => 'object',
+                            'properties' => [
+                                'code' => [
+                                    'type' => 'number',
+                                    'description' => '0--失败 1--成功'
+                                ],
+                                'status' => [
+                                    'type' => 'string',
+                                    'description' => '状态值'
+                                ],
+                                'data' => $detail
+                            ],
+                            'required' => ['code', 'status', 'data']
+                        ]
+                    ]
+                ]
+            ];
+        }
+        if ($allowPost) {
+            if (!is_null($tablePk)) {
+                if (is_array($tablePk)) {
+                    foreach ($tablePk as $v) {
+                        $postData['properties'][$v] = [
+                            'type' => 'string',
+                            'description' => ''
+                        ];
+                    }
+                } else {
+                    $postData['properties'][$tablePk] = [
+                        'type' => 'string',
+                        'description' => ''
+                    ];
+                }
+            }
+            $paths[$path]['post'] = [
+                'tags' => ['临时分类'],
+                'summary' => '添加' . $showName,
+                'description' => '',
+                "consumes" => [
+                    "multipart/form-data"
+                ],
+                'parameters' => $postParameters,
+                'responses' => [
+                    '200' => [
+                        'description' => 'successful operation',
+                        'schema' => [
+                            '$schema' => 'http://json-schema.org/draft-04/schema#',
+                            'type' => 'object',
+                            'properties' => [
+                                'code' => [
+                                    'type' => 'number',
+                                    'description' => '0--失败 1--成功'
+                                ],
+                                'status' => [
+                                    'type' => 'string',
+                                    'description' => '状态值'
+                                ],
+                                'data' => $postData
+                            ],
+                            "required" => ["code", "status", 'data']
+                        ]
+                    ]
+                ]
+            ];
+        }
+        if ($allowPut) {
+            if (!is_null($tablePk)) {
+                if (is_array($tablePk)) {
+                    foreach ($tablePk as $v) {
+                        if (!$hasPk[$v]) {
+                            $putParameters[] = [
+                                'name' => $v,
+                                'in' => 'formData',
+                                'required' => true,
+                                'description' => '',
+                                'type' => 'string'
+                            ];
+                        }
+                    }
+                } else {
+                    if (!$hasPk[$tablePk]) {
+                        $putParameters[] = [
+                            'name' => $tablePk,
+                            'in' => 'formData',
+                            'required' => true,
+                            'description' => '',
+                            'type' => 'string'
+                        ];
+                    }
+                }
+            }
+            $paths[$path]['put'] = [
+                'tags' => ['临时分类'],
+                'summary' => '修改' . $showName,
+                'description' => '',
+                "consumes" => [
+                    "multipart/form-data"
+                ],
+                'parameters' => $putParameters,
+                'responses' => [
+                    '200' => [
+                        'description' => 'successful operation',
+                        'schema' => [
+                            '$schema' => 'http://json-schema.org/draft-04/schema#',
+                            'type' => 'object',
+                            'properties' => [
+                                'code' => [
+                                    'type' => 'number',
+                                    'description' => '0--失败 1--成功'
+                                ],
+                                'status' => [
+                                    'type' => 'string',
+                                    'description' => '状态值'
+                                ]
+                            ],
+                            "required" => ["code", "status"]
+                        ]
+                    ]
+                ]
+            ];
+        }
+        if ($allowDelete && !is_null($tablePk)) {
+            if (is_array($tablePk)) {
+                foreach ($tablePk as $v) {
+                    if (!$hasPk[$v]) {
+                        $deleteParameters[] = [
+                            'name' => $v,
+                            'in' => 'query',
+                            'required' => true,
+                            'description' => '',
+                            'type' => 'string'
+                        ];
+                    }
+                }
+            } else {
+                if (!$hasPk[$tablePk]) {
+                    $putParameters[] = [
+                        'name' => $tablePk,
+                        'in' => 'query',
+                        'required' => true,
+                        'description' => '',
+                        'type' => 'string'
+                    ];
+                }
+            }
+            $paths[$path]['delete'] = [
+                'tags' => ['临时分类'],
+                'summary' => '删除' . $showName,
+                'description' => '',
+                "consumes" => [
+                    "multipart/form-data"
+                ],
+                'parameters' => $putParameters,
+                'responses' => [
+                    '200' => [
+                        'description' => 'successful operation',
+                        'schema' => [
+                            '$schema' => 'http://json-schema.org/draft-04/schema#',
+                            'type' => 'object',
+                            'properties' => [
+                                'code' => [
+                                    'type' => 'number',
+                                    'description' => '0--失败 1--成功'
+                                ],
+                                'status' => [
+                                    'type' => 'string',
+                                    'description' => '状态值'
+                                ]
+                            ],
+                            "required" => ["code", "status"]
+                        ]
+                    ]
+                ]
+            ];
         }
 
         $json = [
@@ -390,45 +694,33 @@ CODE;
                     'description' => '公共分类',
                 ]
             ],
-            'paths' => [
-                $path => [
-                    'get' => [
-                        'tags' => ['临时分类'],
-                        'summary' => $showName . '列表',
-                        'description' => '',
-                        'parameters' => [
-                            [
-                                'name' => 'page',
-                                'in' => 'query',
-                                'required' => false,
-                                'description' => '页码',
-                                'type' => 'string'
-                            ]
-                        ],
-                        'responses' => [
-                            '200' => [
-                                'description' => 'successful operation',
-                                'schema' => [
-                                    '$schema' => 'http://json-schema.org/draft-04/schema#',
-                                    'type' => 'object',
-                                    'properties' => [
-                                        'code' => [
-                                            'type' => 'number',
-                                            'description' => '0--失败 1--成功'
-                                        ],
-                                        'status' => [
-                                            'type' => 'string',
-                                            'description' => '状态值'
-                                        ],
-                                        'data' => $indexField
-                                    ]
-                                ]
-                            ]
-                        ]
-                    ]
-                ]
-            ]
+            'paths' => $paths
         ];
+
+        try {
+            $client = new Client(['base_uri' => $this->config['api_uri']]);
+            $response = $client->request('POST', '/api/open/import_data', [
+                'form_params' => [
+                    'json' => json_encode($json),
+                    'type' => 'swagger',
+                    'merge' => 'normal',
+                    'token' => $this->config['api_token']
+                ],
+                'headers' => [
+                    'Content-Type' => 'application/x-www-form-urlencoded',
+                ],
+                'http_errors' => false
+            ]);
+            $code = $response->getStatusCode();
+            if ($code == 200) {
+                $body = json_decode((string)$response->getBody(), true);
+                return $body['errmsg'];
+            } else {
+                return '请求出错';
+            }
+        } catch (\Exception $e) {
+            return '请求出错';
+        }
     }
 
     /**

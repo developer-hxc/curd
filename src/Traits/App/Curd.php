@@ -106,8 +106,20 @@ trait Curd
                 // 验证失败 输出错误信息
                 $this->returnFail($params_status);
             }
-            $res = model($this->model)->allowField(true)->save($params);
-            $this->returnRes($res, '创建失败');
+            $model = model($this->model);
+            $res = $model->allowField(true)->save($params);
+            $data = [];
+            $pk = $model->getPk();
+            if ($res && !is_null($pk)) {
+                if (is_array($pk)) {
+                    foreach ($pk as $v) {
+                        $data[$v] = $model->{$v};
+                    }
+                } else {
+                    $data[$pk] = $model->{$pk};
+                }
+            }
+            $this->returnRes($res, '创建失败', $data);
         }
     }
 

@@ -68,7 +68,7 @@ class Hxc extends Command
             copy(__DIR__ . '/../config.php', $targetPath . 'curd.php');
         }
         if (!file_exists(ROOT_PATH . '/env.php')) {
-            file_put_contents(ROOT_PATH.'/env.php',"<?php\nreturn [\n    'view_root' => ''\n];");
+            file_put_contents(ROOT_PATH.'/env.php',"<?php\nreturn [\n    'view_root' => '',\n    'api_token' => '',\n    'api_uri' => ''\n];");
         }
     }
 }

@@ -19,7 +19,8 @@
         "ext-json": "*",
         "ext-mbstring": "*",
         "topthink/framework": "5.0.*",
-        "hxc/qt-installer": "^1.0"
+        "hxc/qt-installer": "^1.0",
+        "guzzlehttp/guzzle": "^6.3"
     },
     "autoload": {
         "psr-4": {
