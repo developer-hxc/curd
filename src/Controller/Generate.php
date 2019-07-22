@@ -165,7 +165,7 @@ class Generate extends Controller
                     $validateRes = $this->createAppValidate($data, $controllerName);
                     $responseMessage .= ($validateRes === true ? "验证器生成成功，请根据业务逻辑进行配置\n" : "$validateRes\n") . '</br>';
                     $documentRes = $this->createDocument($data, $controllerName, $showName, $tableName);
-                    $responseMessage .= '文档生成结果：' . $documentRes . "\n";
+                    $responseMessage .= '文档生成结果：' . $documentRes . "</br>";
                 }
             } elseif ($data['selectVal'] == '后台') {
                 //后台
