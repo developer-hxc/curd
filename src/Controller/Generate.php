@@ -3,7 +3,9 @@
 namespace Hxc\curd\Controller;
 
 
+use Exception;
 use GuzzleHttp\Client;
+use GuzzleHttp\Exception\GuzzleException;
 use think\Config;
 use think\Controller;
 use think\Db;
@@ -23,7 +25,9 @@ class Generate extends Controller
             throw new HttpException(404, 'module not exists:Generate');
         }
         Config::set('default_return_type', 'json');
-        $this->config = include_once ROOT_PATH . '/env.php';
+        if (file_exists(ROOT_PATH . '/env.php')) {
+            $this->config = include_once ROOT_PATH . '/env.php';
+        }
     }
 
     public function index()
@@ -127,7 +131,7 @@ class Generate extends Controller
     /**
      * 生成
      * @param Request $request
-     * @return false|string|void
+     * @throws GuzzleException
      */
     public function generate(Request $request)
     {
@@ -356,6 +360,14 @@ CODE;
         return true;
     }
 
+    /**
+     * @param $data
+     * @param $controllerName
+     * @param $showName
+     * @param $tableName
+     * @return string
+     * @throws GuzzleException
+     */
     private function createDocument($data, $controllerName, $showName, $tableName)
     {
         if (empty($this->config['api_token']) || empty($this->config['api_uri'])) {
@@ -579,7 +591,7 @@ CODE;
             if (!is_null($tablePk)) {
                 if (is_array($tablePk)) {
                     foreach ($tablePk as $v) {
-                        if (!$hasPk[$v]) {
+                        if (empty($hasPk[$v])) {
                             $putParameters[] = [
                                 'name' => $v,
                                 'in' => 'formData',
@@ -590,7 +602,7 @@ CODE;
                         }
                     }
                 } else {
-                    if (!$hasPk[$tablePk]) {
+                    if (empty($hasPk[$tablePk])) {
                         $putParameters[] = [
                             'name' => $tablePk,
                             'in' => 'formData',
@@ -634,7 +646,7 @@ CODE;
         if ($allowDelete && !is_null($tablePk)) {
             if (is_array($tablePk)) {
                 foreach ($tablePk as $v) {
-                    if (!$hasPk[$v]) {
+                    if (empty($hasPk[$v])) {
                         $deleteParameters[] = [
                             'name' => $v,
                             'in' => 'query',
@@ -645,8 +657,8 @@ CODE;
                     }
                 }
             } else {
-                if (!$hasPk[$tablePk]) {
-                    $putParameters[] = [
+                if (empty($hasPk[$tablePk])) {
+                    $deleteParameters[] = [
                         'name' => $tablePk,
                         'in' => 'query',
                         'required' => true,
@@ -662,7 +674,7 @@ CODE;
                 "consumes" => [
                     "multipart/form-data"
                 ],
-                'parameters' => $putParameters,
+                'parameters' => $deleteParameters,
                 'responses' => [
                     '200' => [
                         'description' => 'successful operation',
@@ -718,7 +730,7 @@ CODE;
             } else {
                 return '请求出错';
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return '请求出错';
         }
     }
